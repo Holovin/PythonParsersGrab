@@ -18,7 +18,7 @@ def main():
 
     # bot
     with open(Config.get('APP_OUTPUT_CSV'), 'w', newline='') as output:
-        writer = csv.writer(output)
+        writer = csv.writer(output, delimiter=';')
 
         try:
             threads_counter = int(Config.get('APP_THREAD_COUNT'))

@@ -71,7 +71,7 @@ class DSpider(Spider):
                 self.logger.debug('Skip line {}'.format(index))
                 continue
 
-            self.result.writerow([item_name, pic, count, inner_d, outer_d, width, price])
+            self.result.writerow([item_name, count, price])
             self.logger.debug('Index: {} | {} {} {} {} {} {}'
                               .format(index, item_name, pic, count, inner_d, outer_d, width, price))
 
