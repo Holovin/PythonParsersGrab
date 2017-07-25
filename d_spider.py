@@ -11,7 +11,7 @@ from helpers.url_generator import UrlGenerator
 # Don't remove task argument even if not use it (it's break grab and spider crashed)
 # noinspection PyUnusedLocal
 class DSpider(Spider):
-    initial_urls = [Config.get('SITE_URL')]
+    initial_urls = Config.get_seq('SITE_URL')
 
     def __init__(self, thread_number, logger_name, writer):
         super().__init__(thread_number)
@@ -43,10 +43,13 @@ class DSpider(Spider):
                 self.logger.error(err)
                 raise Exception(err)
 
-        url_gen = UrlGenerator(Config.get('SITE_URL'), Config.get('SITE_PAGE_PARAM'))
+        self.logger.info('Task: {}, max_page: {}'.format(task.url, max_page))
 
-        for p in range(1, max_page + 1):
+        url_gen = UrlGenerator(task.url, Config.get('SITE_PAGE_PARAM'))
+
+        for p in range(1, 2): #max_page + 1):
             url = url_gen.get_page(p)
+            print(url)
             yield Task('parse_page', url=url)
 
         self.logger.info('Tasks added...')
@@ -54,25 +57,51 @@ class DSpider(Spider):
     def task_parse_page(self, grab, task):
         self.logger.info('Start task: {}'.format(task.url))
 
-        rows = grab.doc.select('//div[@class="content"]/table[@class="item_list"]//tr')
-        self.logger.debug('Index / Pic_Url / Name / Count / d / D / B / Price')
+        rows = grab.doc.select('//div[@class="products"]/table[@class="prod"]//tr[not(contains(@class, "white"))]'
+                               '//td[@class="name"]/a')
 
         for index, row in enumerate(rows):
             try:
-                item_name = row.select('./td[@class="item_name"]').text()
-                pic = row.select('./td[@class="pic"]//img').attr('src')
-                count = row.select('./td[@class="item_quant"]').text()
-                inner_d = row.select('./td[@class="innerd"]').text()
-                outer_d = row.select('./td[@class="outerd"]').text()
-                width = row.select('./td[@class="width"]').text()
-                price = row.select('./td[@class="price"]').text()
+                # TODO: get hosts
+                # TODO: add new tasks
+                print(row.attr('href'))
+                # item_name = row.select('./td[@class="item_name"]').text()
+                # pic = row.select('./td[@class="pic"]//img').attr('src')
+                # count = row.select('./td[@class="item_quant"]').text()
+                # inner_d = row.select('./td[@class="innerd"]').text()
+                # outer_d = row.select('./td[@class="outerd"]').text()
+                # width = row.select('./td[@class="width"]').text()
+                # price = row.select('./td[@class="price"]').text()
 
             except DataNotFound:
                 self.logger.debug('Skip line {}'.format(index))
                 continue
 
-            self.result.writerow([item_name, count, price])
-            self.logger.debug('Index: {} | {} {} {} {} {} {}'
-                              .format(index, item_name, pic, count, inner_d, outer_d, width, price))
+            # self.logger.debug('Index: {} | {} {} {} {} {} {}'
 
-        self.logger.info('Task {} end'.format(task.url))
+
+    # def task_parse_page(self, grab, task):
+    #     self.logger.info('Start task: {}'.format(task.url))
+    #
+    #     rows = grab.doc.select('//div[@class="content"]/table[@class="item_list"]//tr')
+    #     self.logger.debug('Index / Pic_Url / Name / Count / d / D / B / Price')
+    #
+    #     for index, row in enumerate(rows):
+    #         try:
+    #             item_name = row.select('./td[@class="item_name"]').text()
+    #             pic = row.select('./td[@class="pic"]//img').attr('src')
+    #             count = row.select('./td[@class="item_quant"]').text()
+    #             inner_d = row.select('./td[@class="innerd"]').text()
+    #             outer_d = row.select('./td[@class="outerd"]').text()
+    #             width = row.select('./td[@class="width"]').text()
+    #             price = row.select('./td[@class="price"]').text()
+    #
+    #         except DataNotFound:
+    #             self.logger.debug('Skip line {}'.format(index))
+    #             continue
+    #
+    #         self.result.writerow([item_name, count, price])
+    #         self.logger.debug('Index: {} | {} {} {} {} {} {}'
+    #                           .format(index, item_name, pic, count, inner_d, outer_d, width, price))
+    #
+    #     self.logger.info('Task {} end'.format(task.url))
