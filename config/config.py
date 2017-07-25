@@ -23,3 +23,26 @@ class Config:
             raise ValueError('Empty config value')
 
         return value
+
+    @staticmethod
+    def get_seq(key, sep='_'):
+        if Config.loaded is False:
+            Config.load()
+
+        array = []
+        counter = 1
+
+        while True:
+            value = os.environ.get('{}{}{}'.format(key, sep, counter))
+
+            if value is None or counter > 1000:
+                break
+
+            array.append(value)
+            counter += 1
+
+        if len(array) == 0:
+            raise ValueError('Empty seq values')
+
+        return array
+
