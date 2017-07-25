@@ -1,6 +1,8 @@
 ## Installation
 ### 1. Dependencies
-`sudo apt install python-pip python-dev libffi-dev libssl-dev libxml2-dev libxslt1-dev libjpeg8-dev zlib1g-dev`
+```bash
+sudo apt install python-pip python-dev libffi-dev libssl-dev libxml2-dev libxslt1-dev libjpeg8-dev zlib1g-dev
+```
 
 ### 2. Install
 ```bash
