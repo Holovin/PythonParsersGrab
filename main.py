@@ -1,5 +1,8 @@
 import csv
 import logging
+import os
+
+import time
 
 from config.config import Config
 from d_spider import DSpider
@@ -17,7 +20,14 @@ def main():
     logger.info('Start app...')
 
     # bot
-    with open(Config.get('APP_OUTPUT_CSV'), 'w', newline='') as output:
+    output_file_name = time.strftime('%d_%m_%Y') + '.csv'
+    output_path = os.path.join(Config.get('APP_OUTPUT_DIR'), output_file_name)
+
+    if not os.path.exists(Config.get('APP_OUTPUT_DIR')):
+        logger.info('Create directory, because not exist')
+        os.makedirs(Config.get('APP_OUTPUT_DIR'))
+
+    with open(output_path, 'w', newline='', encoding=Config.get('APP_OUTPUT_ENC')) as output:
         writer = csv.writer(output, delimiter=';')
 
         try:
