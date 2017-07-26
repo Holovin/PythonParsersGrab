@@ -37,9 +37,8 @@ class DSpider(Spider):
         max_page = 0
 
         if self._check_body_errors(task, grab.doc, '[start]'):
-            if task.task_try_count < self.err_limit:
-                self.logger.fatal('[start] Err task with url {}, attempt {}'.format(task.url, task.task_try_count))
-
+            err = '[start] Err task with url {}, attempt {}'.format(task.url, task.task_try_count)
+            self.logger.fatal(err)
             return
 
         for page_link in grab.doc.select('//a[contains(@href, "{}")]'.format(Config.get('SITE_PAGE_PARAM'))):
@@ -206,7 +205,7 @@ class DSpider(Spider):
 
     def _check_body_errors(self, task, doc, part):
         if doc.body == '' or doc.code != 200:
-            err = '{} Body is {}, code is {}, url is {}'.format(part, doc.body, doc.code, task.url)
+            err = '{} Code is {}, url is {}, body is {}'.format(part, doc.code, task.url, doc.body)
             print(err)
             self.logger.error(err)
             return True
