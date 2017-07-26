@@ -32,7 +32,12 @@ def main():
 
         try:
             threads_counter = int(Config.get('APP_THREAD_COUNT'))
-            bot = DSpider(thread_number=threads_counter, logger_name='ddd_site_parse', writer=writer)
+            bot = DSpider(
+                thread_number=threads_counter,
+                logger_name='ddd_site_parse',
+                writer=writer,
+                try_limit=int(Config.get('APP_TRY_LIMIT'))
+            )
             bot.run()
 
         except Exception as e:
