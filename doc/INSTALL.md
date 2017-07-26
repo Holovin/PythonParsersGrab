@@ -1,7 +1,8 @@
 ## Installation
 ### 1. Dependencies
 ```bash
-sudo apt install python-pip python-dev libffi-dev libssl-dev libxml2-dev libxslt1-dev libjpeg8-dev zlib1g-dev
+sudo apt update
+sudo apt install python-pip python-dev libffi-dev libssl-dev libxml2-dev libxslt1-dev libjpeg8-dev zlib1g-dev -y
 ```
 
 ### 2. Install
@@ -9,8 +10,9 @@ sudo apt install python-pip python-dev libffi-dev libssl-dev libxml2-dev libxslt
 cd ~
 wget -O python.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash python.sh -b
-export PATH=~/miniconda3/bin:$PATH
+rm python.sh
 
+export PATH=~/miniconda3/bin:$PATH
 conda create --name 'd_parsers' python=3.6 -y
 source activate d_parsers
 
