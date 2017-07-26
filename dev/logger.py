@@ -3,7 +3,7 @@ from logging.handlers import RotatingFileHandler
 from config.config import Config
 
 
-def logger_setup(log_file, loggers=None):
+def logger_setup(log_file, loggers=None, touch_root=False):
     mode = Config.get('APP_WORK_MODE')
 
     if mode == 'dev':
@@ -13,11 +13,12 @@ def logger_setup(log_file, loggers=None):
 
     log_formatter = logging.Formatter(Config.get('APP_LOG_FORMAT'), datefmt='%Y/%m/%d %H:%M:%S')
 
-    root = logging.getLogger()
-    root.setLevel(log_level)
-    root.addHandler(logging.NullHandler())
+    if touch_root:
+        root = logging.getLogger()
+        root.setLevel(log_level)
+        root.addHandler(logging.NullHandler())
 
-    handler = RotatingFileHandler(log_file, backupCount=5)
+    handler = RotatingFileHandler(log_file, backupCount=1)
     handler.setLevel(log_level)
     handler.setFormatter(log_formatter)
     handler.doRollover()

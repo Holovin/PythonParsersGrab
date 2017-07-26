@@ -62,8 +62,8 @@ class DSpider(Spider):
         self.logger.info('[page] Find tasks: {}'.format(task.url))
 
         try:
-            if self._check_body_errors(task, grab.doc):
-                yield Task('parse_page', url=task.url, priority=110, task_try_count=task.task_try_count + 1)
+            if self._check_body_errors('[page]', task, grab.doc):
+                yield Task('parse_page', url=task.url, priority=110, task_try_count=task.task_try_count + 1, raw=True)
                 return
 
             rows = grab.doc.select('//div[@class="products"]/table[@class="prod"]//tr[not(contains(@class, "white"))]')
@@ -107,7 +107,7 @@ class DSpider(Spider):
                 url = urllib.parse.urljoin(self.domain, url)
                 self.logger.debug('[page] Add page: {}'.format(url))
 
-                yield Task('parse_items', url=url, priority=100)
+                yield Task('parse_items', url=url, priority=100, raw=True)
 
         except Exception as e:
             err = 'Page url {} parse failed (e: {})'.format(task.url, e)
@@ -118,8 +118,8 @@ class DSpider(Spider):
         self.logger.debug('[items] Parse page: {}'.format(task.url))
 
         try:
-            if self._check_body_errors(task, grab.doc):
-                yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count + 1)
+            if self._check_body_errors('[items]', task, grab.doc):
+                yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count + 1, raw=True)
                 return
 
             rows = grab.doc.select('//div[@id="primary_block"]//table[@class="prod"]//tr[contains(@class, "product")]')
@@ -165,7 +165,7 @@ class DSpider(Spider):
                 item_name = row.select('./td[@class="name"]').text().strip()
 
                 # OUTPUT
-                output_line = '{} {} {} {}'.format(item_name, count, unit, price)
+                self.logger.debug('[items] Item added, index {} at url {}'.format(index, task.url))
                 self.result.writerow([item_name, count, unit, price])
 
         except Exception as e:
@@ -173,20 +173,9 @@ class DSpider(Spider):
             print(err)
             self.logger.error(err)
 
-    def task_parse_page_fallback(self, task):
-        self._go_err(task)
-
-    def task_parse_items_fallback(self, task):
-        self._go_err(task)
-
-    def _go_err(self, task):
-        err = 'Url {} request failed! Try less APP_THREAD_COUNT!'.format(task.url)
-        self.logger.fatal(err)
-        print(err)
-
-    def _check_body_errors(self, task, doc):
+    def _check_body_errors(self, task, doc, part):
         if doc.body == '' or doc.code != 200:
-            err = 'Body is {}, code is {}, url is {}'.format(doc.body, doc.code, task.url)
+            err = '{} Body is {}, code is {}, url is {}'.format(part, doc.body, doc.code, task.url)
             print(err)
             self.logger.error(err)
             return True

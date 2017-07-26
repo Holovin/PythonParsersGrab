@@ -11,7 +11,19 @@ from dev.logger import logger_setup
 
 def main():
     # setup
-    logger_setup(Config.get('APP_LOG_FILE'), ['ddd_site_parse'])
+    logger_setup(Config.get('APP_LOG_DEBUG_FILE'), [
+        'ddd_site_parse',
+    ], True)
+
+    logger_setup(Config.get('APP_LOG_GRUB_FILE'), [
+        'grab.document',
+        'grab.spider.base',
+        'grab.spider.task',
+        'grab.spider.base.verbose'
+        'grab.proxylist',
+        'grab.stat',
+        'grab.script.crawl'
+    ])
 
     # log
     logger = logging.getLogger('ddd_site_parse')

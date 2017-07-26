@@ -21,6 +21,7 @@ App for parse site \*\*\*\*\*\*\*.\*\* with python grab framework.
 
 ##### Secondary params
 - `APP_LOG_FORMAT` - log format (in python logger format)
-- `APP_LOG_FILE` - path to log file
+- `APP_LOG_DEBUG_FILE` - path to log file (only own code output)
+- `APP_LOG_GRUB_FILE` - path to log file (only grub lib output)
 - `APP_WORK_MODE` - `dev` value sets DEBUG mode for all loggers, otherwise INFO 
 - `APP_TRY_LIMIT` - number of repeat tasks
