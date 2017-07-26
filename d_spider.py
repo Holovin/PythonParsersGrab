@@ -14,6 +14,8 @@ class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
     domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urllib.parse.urlparse(Config.get_seq('SITE_URL')[0]))
 
+    err_limit = int(Config.get('APP_TRY_LIMIT'))
+
     re_page_number = re.compile('{}=(\d+)'.format(Config.get('SITE_PAGE_PARAM')))
     re_count = re.compile('^\d+$')
     re_price = re.compile('^\d+(.\d+)?$')
@@ -26,6 +28,12 @@ class DSpider(Spider):
 
     def task_initial(self, grab, task):
         max_page = 0
+
+        if self._check_body_errors(task, grab.doc, '[start]'):
+            if task.task_try_count < self.err_limit:
+                self.logger.fatal('[start] Err task with url {}, attempt {}'.format(task.url, task.task_try_count))
+
+            return
 
         for page_link in grab.doc.select('//a[contains(@href, "{}")]'.format(Config.get('SITE_PAGE_PARAM'))):
             match = self.re_page_number.search(page_link.attr('href'))
@@ -62,8 +70,16 @@ class DSpider(Spider):
         self.logger.info('[page] Find tasks: {}'.format(task.url))
 
         try:
-            if self._check_body_errors('[page]', task, grab.doc):
-                yield Task('parse_page', url=task.url, priority=110, task_try_count=task.task_try_count + 1, raw=True)
+            if self._check_body_errors(task, grab.doc, '[page]'):
+                if task.task_try_count < self.err_limit:
+                    self.logger.error(
+                        '[page] Restart task with url {}, attempt {}'.format(task.url, task.task_try_count))
+                    yield Task('parse_page', url=task.url, priority=110, task_try_count=task.task_try_count + 1,
+                               raw=True)
+                else:
+                    self.logger.error(
+                        '[page] Skip task with url {}, attempt {}'.format(task.url, task.task_try_count))
+
                 return
 
             rows = grab.doc.select('//div[@class="products"]/table[@class="prod"]//tr[not(contains(@class, "white"))]')
@@ -110,7 +126,7 @@ class DSpider(Spider):
                 yield Task('parse_items', url=url, priority=100, raw=True)
 
         except Exception as e:
-            err = 'Page url {} parse failed (e: {})'.format(task.url, e)
+            err = '[page] Url {} parse failed (e: {})'.format(task.url, e)
             print(err)
             self.logger.error(err)
 
@@ -118,8 +134,16 @@ class DSpider(Spider):
         self.logger.debug('[items] Parse page: {}'.format(task.url))
 
         try:
-            if self._check_body_errors('[items]', task, grab.doc):
-                yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count + 1, raw=True)
+            if self._check_body_errors(task, grab.doc, '[items]'):
+                if task.task_try_count < self.err_limit:
+                    self.logger.error(
+                        '[items] Restart task with url {}, attempt {}'.format(task.url, task.task_try_count))
+                    yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count + 1,
+                               raw=True)
+                else:
+                    self.logger.error(
+                        '[items] Skip task with url {}, attempt {}'.format(task.url, task.task_try_count))
+
                 return
 
             rows = grab.doc.select('//div[@id="primary_block"]//table[@class="prod"]//tr[contains(@class, "product")]')
@@ -169,7 +193,7 @@ class DSpider(Spider):
                 self.result.writerow([item_name, count, unit, price])
 
         except Exception as e:
-            err = 'Item url {} parse failed (e: {}), debug: {}'.format(task.url, e, grab.doc.text())
+            err = '[items] Url {} parse failed (e: {}), debug: {}'.format(task.url, e, grab.doc.text())
             print(err)
             self.logger.error(err)
 
