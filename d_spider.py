@@ -60,54 +60,70 @@ class DSpider(Spider):
 
     def task_parse_page(self, grab, task):
         self.logger.info('[page] Find tasks: {}'.format(task.url))
-        rows = grab.doc.select('//div[@class="products"]/table[@class="prod"]//tr[not(contains(@class, "white"))]')
 
-        for index, row in enumerate(rows):
-            # COUNT
-            count = row.select('./td[2]').text().strip()
-            # skip useless tasks
-            if count == '0':
-                self.logger.debug('[page] Skip at {} (line: {}), not in store ({})'
-                                  .format(task.url, index, count))
-                continue
+        try:
+            if self._check_body_errors(task, grab.doc):
+                yield Task('parse_page', url=task.url, priority=110, task_try_count=task.task_try_count + 1)
+                return
 
-            # PRICE
-            price = row.select('./td[@class="pr"]').text()\
-                .replace('от ', '', 1)\
-                .replace(' .', '', 1)\
-                .replace(',', '', 1).\
-                strip()
+            rows = grab.doc.select('//div[@class="products"]/table[@class="prod"]//tr[not(contains(@class, "white"))]')
 
-            # skip useless tasks
-            if price == 'под заказ':
-                self.logger.debug('[page] Skip at {} (line: {}), not available ({})'
-                                  .format(task.url, index, price))
-                continue
+            for index, row in enumerate(rows):
+                # COUNT
+                count = row.select('./td[2]').text().strip()
+                # skip useless tasks
+                if count == '0':
+                    self.logger.debug('[page] Skip at {} (line: {}), not in store ({})'
+                                      .format(task.url, index, count))
+                    continue
 
-            # check regex
-            if not self.re_price.match(price):
-                self.logger.warning('[page] Skip at {} (line: {}), not valid price format {}'
-                                    .format(task.url, index, price))
-                continue
+                # PRICE
+                price = row.select('./td[@class="pr"]').text() \
+                    .replace('от ', '', 1) \
+                    .replace(' .', '', 1) \
+                    .replace(',', '', 1). \
+                    strip()
 
-            # check less zero
-            if float(price) <= 0:
-                self.logger.warning('[page] Skip at {} (line: {}), price invalid {}'
-                                    .format(task.url, index, price))
-                continue
+                # skip useless tasks
+                if price == 'под заказ':
+                    self.logger.debug('[page] Skip at {} (line: {}), not available ({})'
+                                      .format(task.url, index, price))
+                    continue
 
-            # URL
-            url = row.select('./td[@class="name"]/a').attr('href')
-            url = urllib.parse.urljoin(self.domain, url)
-            self.logger.debug('[page] Add page: {}'.format(url))
+                # check regex
+                if not self.re_price.match(price):
+                    self.logger.warning('[page] Skip at {} (line: {}), not valid price format {}'
+                                        .format(task.url, index, price))
+                    continue
 
-            yield Task('parse_items', url=url, priority=100)
+                # check less zero
+                if float(price) <= 0:
+                    self.logger.warning('[page] Skip at {} (line: {}), price invalid {}'
+                                        .format(task.url, index, price))
+                    continue
+
+                # URL
+                url = row.select('./td[@class="name"]/a').attr('href')
+                url = urllib.parse.urljoin(self.domain, url)
+                self.logger.debug('[page] Add page: {}'.format(url))
+
+                yield Task('parse_items', url=url, priority=100)
+
+        except Exception as e:
+            err = 'Page url {} parse failed (e: {})'.format(task.url, e)
+            print(err)
+            self.logger.error(err)
 
     def task_parse_items(self, grab, task):
         self.logger.debug('[items] Parse page: {}'.format(task.url))
 
         try:
+            if self._check_body_errors(task, grab.doc):
+                yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count + 1)
+                return
+
             rows = grab.doc.select('//div[@id="primary_block"]//table[@class="prod"]//tr[contains(@class, "product")]')
+
             for index, row in enumerate(rows):
                 # COUNT
                 count = row.select('./td[@class="st"]').text().strip()
@@ -153,10 +169,9 @@ class DSpider(Spider):
                 self.result.writerow([item_name, count, unit, price])
 
         except Exception as e:
-            err = 'Url {} parse failed (e: {})'.format(task.url, e)
+            err = 'Item url {} parse failed (e: {}), debug: {}'.format(task.url, e, grab.doc.text())
             print(err)
             self.logger.error(err)
-            yield Task('parse_items', url=task.url, task_try_count=task.task_try_count + 1)
 
     def task_parse_page_fallback(self, task):
         self._go_err(task)
@@ -168,3 +183,12 @@ class DSpider(Spider):
         err = 'Url {} request failed! Try less APP_THREAD_COUNT!'.format(task.url)
         self.logger.fatal(err)
         print(err)
+
+    def _check_body_errors(self, task, doc):
+        if doc.body == '' or doc.code != 200:
+            err = 'Body is {}, code is {}, url is {}'.format(doc.body, doc.code, task.url)
+            print(err)
+            self.logger.error(err)
+            return True
+
+        return False
