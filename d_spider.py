@@ -26,6 +26,13 @@ class DSpider(Spider):
         self.result = writer
         self.logger.info('Init parser ok...')
 
+    def create_grab_instance(self, **kwargs):
+        g = super(DSpider, self).create_grab_instance(**kwargs)
+
+        # fix ddos protection
+        g.setup(cookies={Config.get('APP_COOKIE_NAME'): Config.get('APP_COOKIE_VALUE')})
+        return g
+
     def task_initial(self, grab, task):
         max_page = 0
 
