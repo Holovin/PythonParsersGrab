@@ -104,6 +104,11 @@ class DSpider(Spider):
 
             yield Task('parse_items', url=url)
 
+    def task_parse_page_fallback(self, task):
+        err = 'Url {} request failed! Try less APP_THREAD_COUNT!'.format(task.url)
+        self.logger.fatal(err)
+        print(err)
+
     def task_parse_items(self, grab, task):
         self.logger.debug('Parse page: {}'.format(task.url))
 
@@ -154,7 +159,11 @@ class DSpider(Spider):
                 self.result.writerow([item_name, count, unit, price])
 
         except Exception as e:
-            err = 'err: {}, url: {}'.format(e, task.url)
+            err = 'Url {} parse failed (e: {})'.format(task.url, e)
             print(err)
             self.logger.error(err)
-            exit(100)
+
+    def task_parse_items_fallback(self, task):
+        err = 'Url {} request failed! Try less APP_THREAD_COUNT!'.format(task.url)
+        self.logger.fatal(err)
+        print(err)
