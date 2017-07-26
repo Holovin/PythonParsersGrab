@@ -17,9 +17,10 @@ def logger_setup(log_file, loggers=None):
     root.setLevel(log_level)
     root.addHandler(logging.NullHandler())
 
-    handler = RotatingFileHandler(log_file, maxBytes=10000000, backupCount=5)
+    handler = RotatingFileHandler(log_file, backupCount=5)
     handler.setLevel(log_level)
     handler.setFormatter(log_formatter)
+    handler.doRollover()
 
     if loggers is None:
         loggers = []
