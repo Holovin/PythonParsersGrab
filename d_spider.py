@@ -2,6 +2,7 @@ import logging
 import re
 import urllib.parse
 
+from grab import Grab
 from grab.spider import Spider, Task
 
 from config.config import Config
@@ -13,11 +14,10 @@ from helpers.url_generator import UrlGenerator
 class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
     domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urllib.parse.urlparse(Config.get_seq('SITE_URL')[0]))
-
     err_limit = int(Config.get('APP_TRY_LIMIT'))
+    cookie_jar = None
 
     re_page_number = re.compile('{}=(\d+)'.format(Config.get('SITE_PAGE_PARAM')))
-    re_count = re.compile('^\d+$')
     re_price = re.compile('^\d+(.\d+)?$')
 
     def __init__(self, thread_number, logger_name, writer, try_limit=0):
@@ -26,11 +26,27 @@ class DSpider(Spider):
         self.result = writer
         self.logger.info('Init parser ok...')
 
+    def prepare(self):
+        g = Grab()
+        g.go(Config.get_seq('SITE_URL')[0])
+
+        url = urllib.parse.urljoin(self.domain, '/udata/content/setSortParams/name/ascending')
+        g.setup(post={})
+        g.go(url)
+
+        self.cookie_jar = g.cookies.cookiejar
+
     def create_grab_instance(self, **kwargs):
         g = super(DSpider, self).create_grab_instance(**kwargs)
+        g.cookies.cookiejar = self.cookie_jar
 
         # fix ddos protection
-        g.setup(cookies={Config.get('APP_COOKIE_NAME'): Config.get('APP_COOKIE_VALUE')})
+        cookie_name = Config.get('APP_COOKIE_NAME')
+        cookie_value = Config.get('APP_COOKIE_VALUE')
+
+        if cookie_name != "" and cookie_value != "":
+            g.setup(cookies={cookie_name: cookie_value})
+
         return g
 
     def task_initial(self, grab, task):
@@ -41,7 +57,7 @@ class DSpider(Spider):
             self.logger.fatal(err)
             return
 
-        for page_link in grab.doc.select('//a[contains(@href, "{}")]'.format(Config.get('SITE_PAGE_PARAM'))):
+        for page_link in grab.doc.select('//div[contains(@class, "pagination")]//a[contains(@href, "{}")]'.format(Config.get('SITE_PAGE_PARAM'))):
             match = self.re_page_number.search(page_link.attr('href'))
 
             if len(match.groups()) == 1:
@@ -60,83 +76,21 @@ class DSpider(Spider):
             if max_page < 1:
                 err = '[prep] Bad page counter: {}'.format(max_page)
                 self.logger.error(err)
+                print(err)
+
                 raise Exception(err)
 
         self.logger.info('[prep] Task: {}, max_page: {}'.format(task.url, max_page))
 
         url_gen = UrlGenerator(task.url, Config.get('SITE_PAGE_PARAM'))
 
-        for p in range(1, max_page + 1):
+        for p in range(0, max_page + 1):
             url = url_gen.get_page(p)
             yield Task('parse_page', url=url, priority=90)
 
         self.logger.info('[prep] Tasks added...')
 
     def task_parse_page(self, grab, task):
-        self.logger.info('[page] Find tasks: {}'.format(task.url))
-
-        try:
-            if self._check_body_errors(task, grab.doc, '[page]'):
-                if task.task_try_count < self.err_limit:
-                    self.logger.error(
-                        '[page] Restart task with url {}, attempt {}'.format(task.url, task.task_try_count))
-                    yield Task('parse_page', url=task.url, priority=110, task_try_count=task.task_try_count + 1,
-                               raw=True)
-                else:
-                    self.logger.error(
-                        '[page] Skip task with url {}, attempt {}'.format(task.url, task.task_try_count))
-
-                return
-
-            rows = grab.doc.select('//div[@class="products"]/table[@class="prod"]//tr[not(contains(@class, "white"))]')
-
-            for index, row in enumerate(rows):
-                # COUNT
-                count = row.select('./td[2]').text().strip()
-                # skip useless tasks
-                if count == '0':
-                    self.logger.debug('[page] Skip at {} (line: {}), not in store ({})'
-                                      .format(task.url, index, count))
-                    continue
-
-                # PRICE
-                price = row.select('./td[@class="pr"]').text() \
-                    .replace('от ', '', 1) \
-                    .replace(' .', '', 1) \
-                    .replace(',', '', 1). \
-                    strip()
-
-                # skip useless tasks
-                if price == 'под заказ':
-                    self.logger.debug('[page] Skip at {} (line: {}), not available ({})'
-                                      .format(task.url, index, price))
-                    continue
-
-                # check regex
-                if not self.re_price.match(price):
-                    self.logger.warning('[page] Skip at {} (line: {}), not valid price format {}'
-                                        .format(task.url, index, price))
-                    continue
-
-                # check less zero
-                if float(price) <= 0:
-                    self.logger.warning('[page] Skip at {} (line: {}), price invalid {}'
-                                        .format(task.url, index, price))
-                    continue
-
-                # URL
-                url = row.select('./td[@class="name"]/a').attr('href')
-                url = urllib.parse.urljoin(self.domain, url)
-                self.logger.debug('[page] Add page: {}'.format(url))
-
-                yield Task('parse_items', url=url, priority=100, raw=True)
-
-        except Exception as e:
-            err = '[page] Url {} parse failed (e: {})'.format(task.url, e)
-            print(err)
-            self.logger.error(err)
-
-    def task_parse_items(self, grab, task):
         self.logger.debug('[items] Parse page: {}'.format(task.url))
 
         try:
@@ -152,47 +106,37 @@ class DSpider(Spider):
 
                 return
 
-            rows = grab.doc.select('//div[@id="primary_block"]//table[@class="prod"]//tr[contains(@class, "product")]')
+            rows = grab.doc.select('//div[@class="products-wrap"]//table[contains(@class, "products")]')
 
             for index, row in enumerate(rows):
                 # COUNT
-                count = row.select('./td[@class="st"]').text().strip()
-                # skip if count is number
-                if not self.re_count.match(count):
+                count = row.select('.//td[5]/span').text().strip()
+                # skip if count is wrong
+                if count == 'под заказ':
                     self.logger.warning('[items] Text {} is not a number, skip (url: {})'
-                                        .format(count, task.url))
-                    continue
-                # skip if count less zero
-                if int(count) < 1:
-                    self.logger.warning('[items] Number {} is less than zero, skip (url: {})'
                                         .format(count, task.url))
                     continue
 
                 # PRICE
-                price = row.select('./td[@class="pr"]').text()\
-                    .replace(' .', '', 1)\
-                    .replace(',', '', 1)\
-                    .strip()
+                price = row.select('.//td[3]/b/span').text().strip()
                 # check regex
-                if not self.re_price.match(price):
+                price_re_result = self.re_price.match(price)
+                if (not price_re_result or (price_re_result and float(price) < 0)) and price != 'по запросу':
                     self.logger.warning('[items] Skip item, because price is {} (line: {})'
                                         .format(price, index, ))
                     continue
-
-                # skip if zero
-                if float(price) <= 0:
-                    self.logger.warning('[items] Price {} is less than zero, skip (url: {})'
-                                        .format(price, task.url))
-                    continue
+                # replace
+                if price == 'по запросу':
+                    price = '999999999'
 
                 # UNIT
-                unit = row.select('./td[@class="but"]/form[@class="variants"]//tr/td[2]').text().strip()
+                count, unit = count.split(' ', maxsplit=1)
                 # use default value
                 if unit == '':
                     unit = 'ед.'
 
                 # NAME
-                item_name = row.select('./td[@class="name"]').text().strip()
+                item_name = row.select('.//td[2]').text().strip()
 
                 # OUTPUT
                 self.logger.debug('[items] Item added, index {} at url {}'.format(index, task.url))
