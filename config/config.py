@@ -8,7 +8,8 @@ class Config:
 
     @staticmethod
     def load(file_name='.env'):
-        env_file_path = join(dirname(__file__), file_name)
+        load_dotenv(join(dirname(__file__), file_name))
+        env_file_path = join(dirname(__file__), os.environ.get('ENV_FILE'))
         load_dotenv(env_file_path)
         Config.loaded = True
 
@@ -20,7 +21,7 @@ class Config:
         value = os.environ.get(key)
 
         if value is None:
-            raise ValueError('Empty config value')
+            raise ValueError('Empty config value, name {}'.format(key))
 
         return value
 
