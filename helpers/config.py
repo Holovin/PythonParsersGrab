@@ -1,5 +1,5 @@
 import os
-from os.path import join, dirname
+from os.path import join, dirname, abspath
 from dotenv import load_dotenv
 
 
@@ -7,9 +7,13 @@ class Config:
     loaded = False
 
     @staticmethod
-    def load(file_name='.env'):
+    def load(file_name='../config/.env'):
         load_dotenv(join(dirname(__file__), file_name))
-        env_file_path = join(dirname(__file__), os.environ.get('ENV_FILE'))
+        env_file_path = abspath(join(dirname(__file__), '../config', os.environ.get('ENV_FILE')))
+
+        if not os.path.exists(env_file_path):
+            raise FileNotFoundError('Can''t find site config file')
+
         load_dotenv(env_file_path)
         Config.loaded = True
 

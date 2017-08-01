@@ -1,6 +1,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
-from config.config import Config
+
+from helpers.config import Config
 
 
 def logger_setup(log_file, loggers=None, touch_root=False):

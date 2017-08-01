@@ -5,8 +5,10 @@ import urllib.parse
 from grab import Grab
 from grab.spider import Spider, Task
 
-from config.config import Config
+from helpers.config import Config
+from helpers.output import Output
 from helpers.url_generator import UrlGenerator
+from parser.extend_methods import check_body_errors
 
 
 # Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -25,6 +27,7 @@ class DSpider(Spider):
         self.logger = logging.getLogger(logger_name)
         self.result = writer
         self.logger.info('Init parser ok...')
+        DSpider._check_body_errors = check_body_errors
 
     def prepare(self):
         g = Grab()
@@ -76,7 +79,7 @@ class DSpider(Spider):
             if max_page < 1:
                 err = '[prep] Bad page counter: {}'.format(max_page)
                 self.logger.error(err)
-                print(err)
+                Output.print(err)
 
                 raise Exception(err)
 
@@ -144,14 +147,5 @@ class DSpider(Spider):
 
         except Exception as e:
             err = '[items] Url {} parse failed (e: {}), debug: {}'.format(task.url, e, grab.doc.text())
-            print(err)
+            Output.print(err)
             self.logger.error(err)
-
-    def _check_body_errors(self, task, doc, part):
-        if doc.body == '' or doc.code != 200:
-            err = '{} Code is {}, url is {}, body is {}'.format(part, doc.code, task.url, doc.body)
-            print(err)
-            self.logger.error(err)
-            return True
-
-        return False

@@ -1,16 +1,15 @@
 import csv
 import logging
 import os
-
 import time
 
-from config.config import Config
-from d_spider import DSpider
 from dev.logger import logger_setup
+from helpers.config import Config
+from helpers.output import Output
+from parser.d_spider import DSpider
 
 
-def main():
-    # setup
+def init_loggers():
     logger_setup(Config.get('APP_LOG_DEBUG_FILE'), [
         'ddd_site_parse',
     ], True)
@@ -25,13 +24,22 @@ def main():
         'grab.script.crawl'
     ])
 
-    # log
     logger = logging.getLogger('ddd_site_parse')
     logger.addHandler(logging.NullHandler())
+
+    return logger
+
+
+def main():
+    # output config
+    Output(True if Config.get('APP_CAN_OUTPUT') == 'True' else False)
+
+    # log
+    logger = init_loggers()
     logger.info(' --- ')
     logger.info('Start app...')
 
-    # bot
+    # output
     output_file_name = time.strftime('%d_%m_%Y') + '.csv'
     output_path = os.path.join(Config.get('APP_OUTPUT_DIR'), output_file_name)
 
@@ -39,6 +47,7 @@ def main():
         logger.info('Create directory, because not exist')
         os.makedirs(Config.get('APP_OUTPUT_DIR'))
 
+    # bot
     with open(output_path, 'w', newline='', encoding=Config.get('APP_OUTPUT_ENC')) as output:
         writer = csv.writer(output, delimiter=';')
 
@@ -53,7 +62,7 @@ def main():
             bot.run()
 
         except Exception as e:
-            print(e)
+            Output.print(e)
 
     logger.info('End app...\n\n')
 
