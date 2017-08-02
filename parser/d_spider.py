@@ -24,8 +24,11 @@ class DSpider(Spider):
 
     def __init__(self, thread_number, logger_name, writer, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
+
         self.logger = logging.getLogger(logger_name)
         self.result = writer
+        self.status_counter = {}
+
         self.logger.info('Init parser ok...')
         DSpider._check_body_errors = check_body_errors
 

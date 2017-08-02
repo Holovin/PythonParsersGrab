@@ -14,6 +14,12 @@ def check_body_errors(self, task, doc, part):
         True if request failed
     """
 
+    try:
+        self.status_counter[str(doc.code)] += 1
+
+    except KeyError:
+        self.status_counter[str(doc.code)] = 1
+
     if doc.body == '' or doc.code != 200:
         err = '{} Code is {}, url is {}, body is {}'.format(part, doc.code, task.url, doc.body)
         print(err)

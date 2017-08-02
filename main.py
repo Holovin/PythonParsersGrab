@@ -1,7 +1,10 @@
 import csv
 import logging
+import operator
 import os
 import time
+
+from functools import reduce
 
 from dev.logger import logger_setup
 from helpers.config import Config
@@ -28,6 +31,18 @@ def init_loggers():
     logger.addHandler(logging.NullHandler())
 
     return logger
+
+
+def process_stats(stats):
+    output = 'Stats:\n'
+
+    _stats = sorted(stats.items(), key=operator.itemgetter(1), reverse=True)
+    _max = reduce(lambda a, b: a+b, stats.values())
+
+    for row in _stats:
+        output += 'Code: {}, count: {}% ({} / {})'.format(row[0], row[1]/_max * 100, row[1], _max)
+
+    return output
 
 
 def main():
@@ -60,6 +75,7 @@ def main():
                 try_limit=int(Config.get('APP_TRY_LIMIT'))
             )
             bot.run()
+            logger.info('End with stats: {}'.format(process_stats(bot.status_counter)))
 
         except Exception as e:
             Output.print(e)
