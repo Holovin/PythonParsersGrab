@@ -13,11 +13,11 @@ from parser.d_spider import DSpider
 
 
 def init_loggers():
-    logger_setup(Config.get('APP_LOG_DEBUG_FILE'), [
+    logger_setup(os.path.join(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DEBUG_FILE')), [
         'ddd_site_parse',
     ], True)
 
-    logger_setup(Config.get('APP_LOG_GRAB_FILE'), [
+    logger_setup(os.path.join(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_GRAB_FILE')), [
         'grab.document',
         'grab.spider.base',
         'grab.spider.task',
