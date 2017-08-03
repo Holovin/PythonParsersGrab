@@ -130,7 +130,7 @@ class DSpider(Spider):
                     continue
                 # replace
                 if price == 'по запросу':
-                    price = Config.get('APP_ON_REQUEST')
+                    price = Config.get('APP_PRICE_ON_REQUEST')
 
                 # UNIT
                 count, unit = count.split(' ', maxsplit=1)
