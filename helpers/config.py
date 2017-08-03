@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 
 class Config:
+    max_seq_size = 1000
     loaded = False
 
     @staticmethod
@@ -25,7 +26,7 @@ class Config:
         value = os.environ.get(key)
 
         if not value:
-            if default_value:
+            if default_value is not None:
                 return default_value
 
             raise ValueError('Empty config value, name {}'.format(key))
@@ -43,7 +44,7 @@ class Config:
         while True:
             value = os.environ.get('{}{}{}'.format(key, sep, counter))
 
-            if value is None or counter > 1000:
+            if value is None or counter > Config.max_seq_size:
                 break
 
             array.append(value)
