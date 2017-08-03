@@ -7,6 +7,7 @@ from grab.spider import Spider, Task
 
 from helpers.config import Config
 from helpers.output import Output
+from helpers.re_set import Ree
 from helpers.url_generator import UrlGenerator
 from parser.extend_methods import check_body_errors
 
@@ -18,9 +19,6 @@ class DSpider(Spider):
     domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urllib.parse.urlparse(Config.get_seq('SITE_URL')[0]))
     err_limit = int(Config.get('APP_TRY_LIMIT'))
     cookie_jar = None
-
-    re_page_number = re.compile('{}=(\d+)'.format(Config.get('SITE_PAGE_PARAM')))
-    re_price = re.compile('^\d+(.\d+)?$')
 
     def __init__(self, thread_number, logger_name, writer, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
@@ -63,10 +61,10 @@ class DSpider(Spider):
             return
 
         for page_link in grab.doc.select('//div[contains(@class, "pagination")]//a[contains(@href, "{}")]'.format(Config.get('SITE_PAGE_PARAM'))):
-            match = self.re_page_number.search(page_link.attr('href'))
+            match = Ree.page_number.search(page_link.attr('href'))
 
-            if len(match.groups()) == 1:
-                page_number = match.group(1)
+            if match:
+                page_number = match.groupdict()['page']
                 self.logger.debug('[prep] Find max_page: {}'.format(page_number))
 
                 int_page_number = int(page_number)
@@ -125,7 +123,7 @@ class DSpider(Spider):
                 # PRICE
                 price = row.select('.//td[3]/b/span').text().strip()
                 # check regex
-                price_re_result = self.re_price.match(price)
+                price_re_result = Ree.price.match(price)
                 if (not price_re_result or (price_re_result and float(price) < 0)) and price != 'по запросу':
                     self.logger.warning('[items] Skip item, because price is {} (line: {})'
                                         .format(price, index, ))
