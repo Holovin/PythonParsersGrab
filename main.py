@@ -17,7 +17,7 @@ def init_loggers():
         'ddd_site_parse',
     ], True)
 
-    logger_setup(Config.get('APP_LOG_GRUB_FILE'), [
+    logger_setup(Config.get('APP_LOG_GRAB_FILE'), [
         'grab.document',
         'grab.spider.base',
         'grab.spider.task',
