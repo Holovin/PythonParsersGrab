@@ -18,13 +18,16 @@ class Config:
         Config.loaded = True
 
     @staticmethod
-    def get(key):
+    def get(key, default_value=None):
         if Config.loaded is False:
             Config.load()
 
         value = os.environ.get(key)
 
-        if value is None:
+        if not value:
+            if default_value:
+                return default_value
+
             raise ValueError('Empty config value, name {}'.format(key))
 
         return value

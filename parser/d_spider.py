@@ -46,11 +46,10 @@ class DSpider(Spider):
         g = super(DSpider, self).create_grab_instance(**kwargs)
         g.cookies.cookiejar = self.cookie_jar
 
-        # fix ddos protection
-        cookie_name = Config.get('APP_COOKIE_NAME')
-        cookie_value = Config.get('APP_COOKIE_VALUE')
+        cookie_name = Config.get('APP_COOKIE_NAME', '')
+        cookie_value = Config.get('APP_COOKIE_VALUE', '')
 
-        if cookie_name != "" and cookie_value != "":
+        if cookie_name != '' and cookie_value != '':
             g.setup(cookies={cookie_name: cookie_value})
 
         return g
