@@ -9,14 +9,13 @@ from helpers.output import Output
 from helpers.re_set import Ree
 from helpers.url_generator import UrlGenerator
 from parser.extend.check_body_errors import check_body_errors
-# Don't remove task argument even if not use it (it's break grab and spider crashed)
-# noinspection PyUnusedLocal
 from parser.helpers.cookies_init import cookies_init
 
 
+# Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
+# Warn: noinspection PyUnusedLocal
 class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
-    domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urllib.parse.urlparse(Config.get_seq('SITE_URL')[0]))
 
     def __init__(self, thread_number, logger_name, writer, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
@@ -26,6 +25,7 @@ class DSpider(Spider):
         self.status_counter = {}
         self.cookie_jar = None
         self.err_limit = try_limit
+        self.domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urllib.parse.urlparse(Config.get_seq('SITE_URL')[0]))
 
         self.logger.info('Init parser ok...')
         DSpider._check_body_errors = check_body_errors
