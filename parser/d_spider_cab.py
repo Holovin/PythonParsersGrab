@@ -1,5 +1,4 @@
 import logging
-import re
 import urllib.parse
 
 from grab import Grab
@@ -9,16 +8,14 @@ from helpers.config import Config
 from helpers.output import Output
 from helpers.re_set import Ree
 from helpers.url_generator import UrlGenerator
-from parser.extend_methods import check_body_errors
+from parser.extend.check_body_errors import check_body_errors
+from parser.helpers.cookies_init import cookies_init
 
 
-# Don't remove task argument even if not use it (it's break grab and spider crashed)
-# noinspection PyUnusedLocal
+# Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
+# Warn: noinspection PyUnusedLocal
 class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
-    domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urllib.parse.urlparse(Config.get_seq('SITE_URL')[0]))
-    err_limit = int(Config.get('APP_TRY_LIMIT'))
-    cookie_jar = None
 
     def __init__(self, thread_number, logger_name, writer, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
@@ -26,6 +23,9 @@ class DSpider(Spider):
         self.logger = logging.getLogger(logger_name)
         self.result = writer
         self.status_counter = {}
+        self.cookie_jar = None
+        self.err_limit = try_limit
+        self.domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urllib.parse.urlparse(Config.get_seq('SITE_URL')[0]))
 
         self.logger.info('Init parser ok...')
         DSpider._check_body_errors = check_body_errors
@@ -42,15 +42,8 @@ class DSpider(Spider):
 
     def create_grab_instance(self, **kwargs):
         g = super(DSpider, self).create_grab_instance(**kwargs)
-        g.cookies.cookiejar = self.cookie_jar
 
-        cookie_name = Config.get('APP_COOKIE_NAME', '')
-        cookie_value = Config.get('APP_COOKIE_VALUE', '')
-
-        if cookie_name != '' and cookie_value != '':
-            g.setup(cookies={cookie_name: cookie_value})
-
-        return g
+        return cookies_init(self.cookie_jar, g)
 
     def task_initial(self, grab, task):
         max_page = 0
