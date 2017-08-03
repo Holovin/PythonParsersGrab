@@ -4,6 +4,7 @@ import logging
 import operator
 import os
 import time
+import sys
 
 from functools import reduce
 
@@ -63,7 +64,19 @@ def parser_loader(file_name):
     return getattr(importlib.import_module('parser.{}'.format(file_name)), 'DSpider')
 
 
+def load_config():
+    if len(sys.argv) > 1:
+        Config.load(os.path.join(os.path.dirname(__file__), 'config'), sys.argv[1])
+        return True
+
+    return False
+
+
 def main():
+    # load config
+    if not load_config():
+        exit(2)
+
     # output config
     Output(True if Config.get('APP_CAN_OUTPUT') == 'True' else False)
 
