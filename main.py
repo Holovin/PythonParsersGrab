@@ -34,6 +34,9 @@ def init_loggers():
 
 
 def process_stats(stats):
+    if not stats:
+        return ''
+
     output = 'Stats:\n'
 
     _stats = sorted(stats.items(), key=operator.itemgetter(1), reverse=True)
@@ -74,7 +77,7 @@ def main():
                 writer=writer,
                 try_limit=int(Config.get('APP_TRY_LIMIT'))
             )
-            bot.run()
+            #bot.run()
             logger.info('End with stats: {}'.format(process_stats(bot.status_counter)))
 
         except Exception as e:
