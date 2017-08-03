@@ -1,5 +1,4 @@
 import os
-from os.path import join, dirname, abspath
 from dotenv import load_dotenv
 
 
@@ -8,21 +7,19 @@ class Config:
     loaded = False
 
     @staticmethod
-    def load(file_name='../config/.env'):
-        load_dotenv(join(dirname(__file__), file_name))
-        env_file_path = abspath(join(dirname(__file__), '../config', os.environ.get('ENV_FILE')))
+    def load(config_dir, file_name):
+        base_file_path = os.path.join(config_dir, '.env')
+        if not load_dotenv(base_file_path):
+            raise Exception('Base config not defined, path: {}'.format(base_file_path))
 
-        if not os.path.exists(env_file_path):
-            raise FileNotFoundError('Can''t find site config file')
+        site_file_path = os.path.join(config_dir, file_name)
+        if not load_dotenv(site_file_path):
+            raise Exception('Site config not defined, path: {}'.format(site_file_path))
 
-        load_dotenv(env_file_path)
         Config.loaded = True
 
     @staticmethod
     def get(key, default_value=None):
-        if Config.loaded is False:
-            Config.load()
-
         value = os.environ.get(key)
 
         if not value:
@@ -35,9 +32,6 @@ class Config:
 
     @staticmethod
     def get_seq(key, sep='_'):
-        if Config.loaded is False:
-            Config.load()
-
         array = []
         counter = 1
 
