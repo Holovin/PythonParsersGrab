@@ -1,4 +1,5 @@
 import csv
+import importlib
 import logging
 import operator
 import os
@@ -9,7 +10,6 @@ from functools import reduce
 from dev.logger import logger_setup
 from helpers.config import Config
 from helpers.output import Output
-from parser.d_spider import DSpider
 
 
 def init_loggers():
@@ -59,6 +59,10 @@ def fix_dirs():
         os.makedirs(log_dir)
 
 
+def parser_loader(file_name):
+    return getattr(importlib.import_module('parser.{}'.format(file_name)), 'DSpider')
+
+
 def main():
     # output config
     Output(True if Config.get('APP_CAN_OUTPUT') == 'True' else False)
@@ -81,6 +85,7 @@ def main():
 
         try:
             threads_counter = int(Config.get('APP_THREAD_COUNT'))
+            DSpider = parser_loader(Config.get('APP_PARSER'))
             bot = DSpider(
                 thread_number=threads_counter,
                 logger_name='ddd_site_parse',
@@ -91,7 +96,10 @@ def main():
             logger.info('End with stats: {}'.format(process_stats(bot.status_counter)))
 
         except Exception as e:
-            Output.print(e)
+            err = 'App core fatal error: {}'.format(e)
+
+            logger.fatal(err)
+            Output.print(err)
 
     logger.info('End app...\n\n')
 
