@@ -13,19 +13,21 @@ from parser.d_spider import DSpider
 
 
 def init_loggers():
-    logger_setup(os.path.join(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DEBUG_FILE')), [
-        'ddd_site_parse',
-    ], True)
+    logger_setup(
+        os.path.join(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'), Config.get('APP_LOG_DEBUG_FILE')),
+        ['ddd_site_parse'], True)
 
-    logger_setup(os.path.join(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_GRAB_FILE')), [
-        'grab.document',
-        'grab.spider.base',
-        'grab.spider.task',
-        'grab.spider.base.verbose'
-        'grab.proxylist',
-        'grab.stat',
-        'grab.script.crawl'
-    ])
+    logger_setup(
+        os.path.join(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'), Config.get('APP_LOG_GRAB_FILE')), [
+            'grab.document',
+            'grab.spider.base',
+            'grab.spider.task',
+            'grab.spider.base.verbose'
+            'grab.proxylist',
+            'grab.stat',
+            'grab.script.crawl'
+        ]
+    )
 
     logger = logging.getLogger('ddd_site_parse')
     logger.addHandler(logging.NullHandler())
@@ -48,9 +50,21 @@ def process_stats(stats):
     return output
 
 
+def fix_dirs():
+    if not os.path.exists(Config.get('APP_OUTPUT_DIR')):
+        os.makedirs(Config.get('APP_OUTPUT_DIR'))
+
+    log_dir = os.path.join(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'))
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+
 def main():
     # output config
     Output(True if Config.get('APP_CAN_OUTPUT') == 'True' else False)
+
+    # output dirs
+    fix_dirs()
 
     # log
     logger = init_loggers()
@@ -60,10 +74,6 @@ def main():
     # output
     output_file_name = time.strftime('%d_%m_%Y') + '.csv'
     output_path = os.path.join(Config.get('APP_OUTPUT_DIR'), output_file_name)
-
-    if not os.path.exists(Config.get('APP_OUTPUT_DIR')):
-        logger.info('Create directory, because not exist')
-        os.makedirs(Config.get('APP_OUTPUT_DIR'))
 
     # bot
     with open(output_path, 'w', newline='', encoding=Config.get('APP_OUTPUT_ENC')) as output:
