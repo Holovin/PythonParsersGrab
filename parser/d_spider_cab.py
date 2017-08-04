@@ -6,10 +6,10 @@ from grab.spider import Spider, Task
 
 from helpers.config import Config
 from helpers.output import Output
-from helpers.re_set import Ree
 from helpers.url_generator import UrlGenerator
 from parser.extend.check_body_errors import check_body_errors
 from parser.helpers.cookies_init import cookies_init
+from parser.helpers.re_set import Ree
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -18,6 +18,8 @@ class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
 
     def __init__(self, thread_number, logger_name, writer, try_limit=0):
+        DSpider._check_body_errors = check_body_errors
+
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
 
         self.logger = logging.getLogger(logger_name)
@@ -26,9 +28,7 @@ class DSpider(Spider):
         self.cookie_jar = None
         self.err_limit = try_limit
         self.domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urllib.parse.urlparse(Config.get_seq('SITE_URL')[0]))
-
         self.logger.info('Init parser ok...')
-        DSpider._check_body_errors = check_body_errors
 
     def prepare(self):
         g = Grab()
