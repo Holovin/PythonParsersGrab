@@ -115,6 +115,10 @@ class DSpider(Spider):
                 # NAME
                 item_name = row.select('./div[@class="name"]').text().strip()
 
+                # Debug: go for all inner pages and try find price
+                # link = row.select('./div[@class="name"]/a').attr('href')
+                # yield Task('parse_items', url=urllib.parse.urljoin(self.domain, link), priority=100, raw=True)
+
                 # OUTPUT
                 self.logger.debug('[items] Item added, index {} at url {}'.format(index, task.url))
                 self.result.writerow([item_name, count, unit, price])
@@ -124,3 +128,7 @@ class DSpider(Spider):
             err = '[items] Url {} parse failed (e: {}), debug: {}'.format(task.url, e, html)
             Output.print(err)
             self.logger.error(err)
+
+    def task_parse_items(self, grab, task):
+        if 'Узнать цену' not in get_body(grab):
+            print(task.url)
