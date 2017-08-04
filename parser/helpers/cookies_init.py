@@ -2,7 +2,8 @@ from helpers.config import Config
 
 
 def cookies_init(cookie_jar, g):
-    g.cookies.cookiejar = cookie_jar
+    if cookie_jar:
+        g.cookies.cookiejar = cookie_jar
 
     cookie_name = Config.get('APP_COOKIE_NAME', '')
     cookie_value = Config.get('APP_COOKIE_VALUE', '')
