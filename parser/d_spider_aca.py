@@ -8,6 +8,7 @@ from helpers.output import Output
 from helpers.url_generator import UrlGenerator
 from parser.extend.check_body_errors import check_body_errors
 from parser.helpers.cookies_init import cookies_init
+from parser.helpers.get_body import get_body
 from parser.helpers.re_set import Ree
 
 
@@ -63,7 +64,7 @@ class DSpider(Spider):
 
         url_gen = UrlGenerator(task.url, Config.get('SITE_PAGE_PARAM'))
 
-        for p in range(0, max_page + 1):
+        for p in range(1, max_page + 1):
             url = url_gen.get_page(p)
             yield Task('parse_page', url=url, priority=90)
 
@@ -75,13 +76,11 @@ class DSpider(Spider):
         try:
             if self._check_body_errors(task, grab.doc, '[items]'):
                 if task.task_try_count < self.err_limit:
-                    self.logger.error(
-                        '[items] Restart task with url {}, attempt {}'.format(task.url, task.task_try_count))
+                    self.logger.error('[items] Restart task with url {}, attempt {}'.format(task.url, task.task_try_count))
                     yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count + 1,
                                raw=True)
                 else:
-                    self.logger.error(
-                        '[items] Skip task with url {}, attempt {}'.format(task.url, task.task_try_count))
+                    self.logger.error('[items] Skip task with url {}, attempt {}'.format(task.url, task.task_try_count))
 
                 return
 
@@ -94,9 +93,10 @@ class DSpider(Spider):
 
             for index, row in enumerate(rows):
                 # COUNT
-                count = row.select('./div[@class="catalog_quantity"]').text().strip()
+                count = row.select('./div[contains(@class, "catalog_quantity")]').text().strip()
+
                 # skip if count is wrong
-                if count == 'Ожидается поставка' or not Ree.number.match(count):
+                if count == 'Ожидаетсяпоставка' or not Ree.number.match(count):
                     self.logger.warning('[items] Text {} is not a number, skip (url: {})'.format(count, task.url))
                     continue
 
@@ -120,6 +120,7 @@ class DSpider(Spider):
                 self.result.writerow([item_name, count, unit, price])
 
         except Exception as e:
-            err = '[items] Url {} parse failed (e: {}), debug: {}'.format(task.url, e, grab.doc.text())
+            html = get_body(grab)
+            err = '[items] Url {} parse failed (e: {}), debug: {}'.format(task.url, e, html)
             Output.print(err)
             self.logger.error(err)
