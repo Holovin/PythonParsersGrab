@@ -12,7 +12,7 @@ class Ree:
     price = re.compile('^\d+(.\d+)?$')
 
     # price{SEP}price, like 10.10 or 11,11
-    price_extractor = re.compile('(?P<price>\d+({}\d+)?)'.format(Config.get('APP_PRICE_SEP')))
+    price_extractor = re.compile('(?P<price>\d+(\{}\d+)?)'.format(Config.get('APP_PRICE_SEP')))
 
     # Just number check (maybe better check with python methods?)
     number = re.compile('^\d+$')
