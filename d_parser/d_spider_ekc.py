@@ -7,9 +7,9 @@ from grab.spider import Spider, Task
 from helpers.config import Config
 from helpers.output import Output
 from helpers.url_generator import UrlGenerator
-from parser.extend.check_body_errors import check_body_errors
-from parser.helpers.cookies_init import cookies_init
-from parser.helpers.re_set import Ree
+from d_parser.extend.check_body_errors import check_body_errors
+from d_parser.helpers.cookies_init import cookies_init
+from d_parser.helpers.re_set import Ree
 
 
 # Don't remove task argument even if not use it (it's break grab and spider crashed)

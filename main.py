@@ -61,7 +61,7 @@ def fix_dirs():
 
 
 def parser_loader(file_name):
-    return getattr(importlib.import_module('parser.{}'.format(file_name)), 'DSpider')
+    return getattr(importlib.import_module('d_parser.{}'.format(file_name)), 'DSpider')
 
 
 def load_config():
