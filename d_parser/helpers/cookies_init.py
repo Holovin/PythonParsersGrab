@@ -12,3 +12,13 @@ def cookies_init(cookie_jar, g):
         g.setup(cookies={cookie_name: cookie_value})
 
     return g
+
+
+def cookies_init_v2(cookie_jar, g):
+    if cookie_jar:
+        g.cookies.cookiejar = cookie_jar
+
+    cookies = Config.get_dict('APP_COOKIE_NAME', 'APP_COOKIE_VALUE')
+    g.setup(cookies=cookies)
+
+    return g
