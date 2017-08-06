@@ -49,3 +49,22 @@ class Config:
 
         return array
 
+    @staticmethod
+    def get_dict(key_1, key_2, sep='_'):
+        out_dict = {}
+        counter = 1
+
+        while True:
+            key = os.environ.get('{}{}{}'.format(key_1, sep, counter))
+            value = os.environ.get('{}{}{}'.format(key_2, sep, counter))
+
+            if key is None or value is None or counter > Config.max_seq_size:
+                break
+
+            out_dict[key] = value
+            counter += 1
+
+        if len(out_dict) == 0:
+            raise ValueError('Empty dict values')
+
+        return out_dict
