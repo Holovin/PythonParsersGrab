@@ -63,7 +63,6 @@ class DSpider(Spider):
                     yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count + 1, raw=True)
                 else:
                     self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-
                 return
 
             table = grab.doc.select('//div[@class="catalog-section-it-table"]')
