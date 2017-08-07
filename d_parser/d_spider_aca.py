@@ -60,7 +60,7 @@ class DSpider(Spider):
             if self._check_body_errors(grab, task):
                 if task.task_try_count < self.err_limit:
                     self.logger.error('[{}] Restart task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-                    yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count+1, raw=True)
+                    yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count + 1, raw=True)
                 else:
                     self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
 
