@@ -3,5 +3,6 @@ class Output:
         if can_write:
             Output.print = print
 
+    @staticmethod
     def print(*args):
         pass
