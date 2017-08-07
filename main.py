@@ -7,6 +7,7 @@ import time
 import sys
 
 from functools import reduce
+from datetime import datetime
 
 from dev.logger import logger_setup
 from helpers.config import Config
@@ -97,6 +98,7 @@ def main():
         writer = csv.writer(output, delimiter=';')
 
         try:
+            Output.print('{} :: Start...'.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S')))
             threads_counter = int(Config.get('APP_THREAD_COUNT'))
             DSpider = parser_loader(Config.get('APP_PARSER'))
             bot = DSpider(
@@ -114,6 +116,7 @@ def main():
             logger.fatal(err)
             Output.print(err)
 
+    Output.print('{} :: End...'.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S')))
     logger.info('End app...\n\n')
 
 
