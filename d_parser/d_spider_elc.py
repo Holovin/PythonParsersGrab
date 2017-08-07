@@ -147,7 +147,7 @@ class DSpider(Spider):
                     self.logger.warning('[items] Count {} is not a number, skip (url: {})'.format(count, task.url))
                     continue
                 # replace if needed
-                if count == 0:
+                if count == '0':
                     count = self.const_zero_stock
 
                 # UNIT
@@ -158,7 +158,7 @@ class DSpider(Spider):
 
                 # OUTPUT
                 self.logger.debug('[items] Item added, index {} at url {}'.format(index, task.url))
-                self.result.writerow([item_name.encode(self.const_enc, 'ignore'), count, unit, price])
+                self.result.writerow([item_name.encode(self.const_enc, 'replace').decode('cp1251'), count, unit, price])
 
         except Exception as e:
             html = get_body(grab)
