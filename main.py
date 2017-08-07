@@ -47,7 +47,7 @@ def process_stats(stats):
     _max = reduce(lambda a, b: a+b, stats.values())
 
     for row in _stats:
-        output += 'Code: {}, count: {}% ({} / {})'.format(row[0], row[1]/_max * 100, row[1], _max)
+        output += 'Code: {}, count: {}% ({} / {})\n'.format(row[0], row[1]/_max * 100, row[1], _max)
 
     return output
 
