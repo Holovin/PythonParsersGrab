@@ -3,6 +3,8 @@ import urllib.parse
 
 from grab.spider import Spider, Task
 
+from d_parser.helpers import url_lib
+from d_parser.helpers.el_parser import get_max_page
 from helpers.config import Config
 from helpers.output import Output
 from helpers.url_generator import UrlGenerator
@@ -27,12 +29,11 @@ class DSpider(Spider):
         self.status_counter = {}
         self.cookie_jar = {}
         self.err_limit = try_limit
-        self.domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urllib.parse.urlparse(Config.get_seq('SITE_URL')[0]))
+        self.domain = url_lib.get_host_from_url(Config.get_seq('SITE_URL')[0])
         self.logger.info('Init parser ok...')
 
     def create_grab_instance(self, **kwargs):
         g = super(DSpider, self).create_grab_instance(**kwargs)
-
         return cookies_init(self.cookie_jar, g)
 
     def task_initial(self, grab, task):
@@ -43,22 +44,8 @@ class DSpider(Spider):
             self.logger.fatal(err)
             return
 
-        for page_link in grab.doc.select('//div[@class="catalog-pagenav"]//a[contains(@href, "{}")]'.format(Config.get('SITE_PAGE_PARAM'))):
-            match = Ree.page_number.search(page_link.attr('href'))
-
-            if match:
-                page_number = match.groupdict()['page']
-                self.logger.debug('[prep] Find max_page: {}'.format(page_number))
-
-                int_page_number = int(page_number)
-
-                if int_page_number > max_page:
-                    self.logger.debug('[prep] Set new max_page: {} => {}'.format(max_page, page_number))
-                    max_page = int_page_number
-
-        else:
-            # if max_page = 0 no raise err because its normal for this site
-            self.logger.debug('[prep] Max page is: {}'.format(max_page))
+        items = grab.doc.select('//div[@class="catalog-pagenav"]//a[contains(@href, "{}")]'.format(Config.get('SITE_PAGE_PARAM')))
+        max_page = get_max_page(items)
 
         self.logger.info('[prep] Task: {}, max_page: {}'.format(task.url, max_page))
 
@@ -77,8 +64,7 @@ class DSpider(Spider):
             if self._check_body_errors(task, grab.doc, '[items]'):
                 if task.task_try_count < self.err_limit:
                     self.logger.error('[items] Restart task with url {}, attempt {}'.format(task.url, task.task_try_count))
-                    yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count + 1,
-                               raw=True)
+                    yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count + 1, raw=True)
                 else:
                     self.logger.error('[items] Skip task with url {}, attempt {}'.format(task.url, task.task_try_count))
 
@@ -129,6 +115,6 @@ class DSpider(Spider):
             Output.print(err)
             self.logger.error(err)
 
-    def task_parse_items(self, grab, task):
-        if 'Узнать цену' not in get_body(grab):
-            print(task.url)
+    # def task_parse_items(self, grab, task):
+    #     if 'Узнать цену' not in get_body(grab):
+    #         print(task.url)
