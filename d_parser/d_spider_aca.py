@@ -44,7 +44,7 @@ class DSpider(Spider):
 
             url_gen = UrlGenerator(task.url, Config.get('SITE_PAGE_PARAM'))
 
-            for p in range(1, max_page+1):
+            for p in range(1, max_page + 1):
                 url = url_gen.get_page(p)
                 yield Task('parse_page', url=url, priority=90)
 
