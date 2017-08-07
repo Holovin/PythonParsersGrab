@@ -41,7 +41,7 @@ def process_stats(stats):
     if not stats:
         return ''
 
-    output = 'Stats:\n'
+    output = ''
 
     _stats = sorted(stats.items(), key=operator.itemgetter(1), reverse=True)
     _max = reduce(lambda a, b: a+b, stats.values())
@@ -109,6 +109,7 @@ def main():
             )
             bot.run()
             logger.info('End with stats: {}'.format(process_stats(bot.status_counter)))
+            Output.print('---\n{} \n---'.format(process_stats(bot.status_counter)))
 
         except Exception as e:
             err = 'App core fatal error: {}'.format(e)
