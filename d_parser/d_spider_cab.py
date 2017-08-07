@@ -40,7 +40,6 @@ class DSpider(Spider):
 
     def create_grab_instance(self, **kwargs):
         g = super(DSpider, self).create_grab_instance(**kwargs)
-
         return cookies_init(self.cookie_jar, g)
 
     def task_initial(self, grab, task):
