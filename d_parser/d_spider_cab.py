@@ -24,9 +24,8 @@ class DSpider(Spider):
         DSpider._common_init = common_init
         self._common_init(writer, try_limit)
 
-        Ree.is_number()
+        Ree.init()
         Ree.is_page_number(Config.get('SITE_PAGE_PARAM'))
-        Ree.is_float()
 
     def prepare(self):
         g = Grab()

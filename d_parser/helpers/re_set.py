@@ -18,14 +18,6 @@ class Ree:
         Ree.page_number = re.compile('{}=(?P<page>\d+)'.format(page_param))
 
     @staticmethod
-    # DEPRECATED
-    # DEPRECATED
-    # DEPRECATED
-    # DEPRECATED
-    def price():
-        price = re.compile('^\d+(.\d+)?$')
-
-    @staticmethod
     def is_float(price_sep=',.'):
         Ree.float = re.compile('(?P<price>\d+([{}]\d+)?)'.format(price_sep))
 
