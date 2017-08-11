@@ -3,13 +3,12 @@ import urllib.parse
 
 from grab.spider import Spider, Task
 
-from helpers.config import Config
-from helpers.output import Output
-from helpers.url_generator import UrlGenerator
-from d_parser.extend.check_body_errors import check_body_errors
 from d_parser.helpers.cookies_init import cookies_init_v2
-from d_parser.helpers.get_body import get_body
+from d_parser.helpers.el_parser import get_max_page, fix_text_encoding
+from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init
 from d_parser.helpers.re_set import Ree
+from helpers.config import Config
+from helpers.url_generator import UrlGenerator
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -17,35 +16,30 @@ from d_parser.helpers.re_set import Ree
 class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
 
-    def __init__(self, thread_number, logger_name, writer, try_limit=0):
-        DSpider._check_body_errors = check_body_errors
-
+    def __init__(self, thread_number, writer, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
+        DSpider._check_body_errors = check_body_errors
+        DSpider._process_error = process_error
+        DSpider._common_init = common_init
+        self._common_init(writer, try_limit)
 
-        self.logger = logging.getLogger(logger_name)
-        self.result = writer
-        self.status_counter = {}
-        self.cookie_jar = {}
-        self.err_limit = try_limit
-        self.domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urllib.parse.urlparse(Config.get_seq('SITE_URL')[0]))
+        Ree.init()
+        Ree.is_page_number(Config.get('SITE_PAGE_PARAM'))
 
         self.const_zero_stock = Config.get('APP_STOCK_ZERO')
         self.const_price_sep = Config.get('APP_PRICE_SEP')
         self.const_enc = Config.get('APP_OUTPUT_ENC')
 
-        self.logger.info('Init parser ok...')
-
     def create_grab_instance(self, **kwargs):
         g = super(DSpider, self).create_grab_instance(**kwargs)
-
         return cookies_init_v2(self.cookie_jar, g)
 
     def task_initial(self, grab, task):
-        self.logger.debug('[cats] Parse page: {}'.format(task.url))
+        self.logger.debug('[{}] Parse page: {}'.format(task.name, task.url))
 
         try:
-            if self._check_body_errors(task, grab.doc, '[items]'):
-                self.logger.error('[cats] Skip task with url {}, attempt {}'.format(task.url, task.task_try_count))
+            if self._check_body_errors(grab, task):
+                self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
                 return
 
             cats = grab.doc.select('//a[contains(@href, "/catalog/")]')
@@ -59,68 +53,44 @@ class DSpider(Spider):
                     url = urllib.parse.urljoin(self.domain, url)
                     links.append(url)
 
+                    self.logger.debug('[{}] Add page: {}'.format(task.name, url))
                     yield Task('parse_pre_page', url=url, priority=90)
-                    self.logger.debug('[cats] Add page: {}'.format(url))
 
         except Exception as e:
-            html = get_body(grab)
-            err = '[cats] Url {} parse failed (e: {}), debug: {}'.format(task.url, e, html)
-            Output.print(err)
-            self.logger.error(err)
+            self._process_error(grab, task, e)
 
     def task_parse_pre_page(self, grab, task):
-        self.logger.debug('[page] Parse pagination: {}'.format(task.url))
-        max_page = 1
+        self.logger.debug('[{}] Parse pagination: {}'.format(task.name, task.url))
 
-        if self._check_body_errors(task, grab.doc, '[start]'):
-            err = '[start] Err task with url {}, attempt {}'.format(task.url, task.task_try_count)
-            self.logger.fatal(err)
+        if self._check_body_errors(grab, task):
+            self.logger.fatal('[start] Err task with url {}, attempt {}'.format(task.url, task.task_try_count))
             return
 
-        for page_link in grab.doc.select('//a[contains(@href, "{}")]'.format(Config.get('SITE_PAGE_PARAM'))):
-            match = Ree.page_number.search(page_link.attr('href'))
+        try:
+            items = grab.doc.select('//a[contains(@href, "{}")]'.format(Config.get('SITE_PAGE_PARAM')))
+            max_page = get_max_page(items, 1, 1)
 
-            if match:
-                page_number = match.groupdict()['page']
-                self.logger.debug('[prep] Find max_page: {}'.format(page_number))
+            url_gen = UrlGenerator(task.url, Config.get('SITE_PAGE_PARAM'))
 
-                int_page_number = int(page_number)
+            for p in range(1, max_page + 1):
+                url = url_gen.get_page(p)
+                yield Task('parse_page', url=url, priority=100)
 
-                if int_page_number > max_page:
-                    self.logger.debug('[prep] Set new max_page: {} => {}'.format(max_page, page_number))
-                    max_page = int_page_number
+            self.logger.info('[{}] Tasks added...'.format(task.name))
 
-        else:
-            self.logger.debug('[prep] Max page is: {}'.format(max_page))
-
-            if max_page < 1:
-                err = '[prep] Bad page counter: {}'.format(max_page)
-                self.logger.error(err)
-                Output.print(err)
-
-                raise Exception(err)
-
-        self.logger.info('[prep] Task: {}, max_page: {}'.format(task.url, max_page))
-
-        url_gen = UrlGenerator(task.url, Config.get('SITE_PAGE_PARAM'))
-
-        for p in range(1, max_page + 1):
-            url = url_gen.get_page(p)
-            yield Task('parse_page', url=url, priority=100)
-
-        self.logger.info('[prep] Tasks added...')
+        except Exception as e:
+            self._process_error(grab, task, e)
 
     def task_parse_page(self, grab, task):
-        self.logger.debug('[items] Parse page: {}'.format(task.url))
+        self.logger.debug('[{}] Parse page: {}'.format(task.name, task.url))
 
         try:
-            if self._check_body_errors(task, grab.doc, '[items]'):
+            if self._check_body_errors(grab, task):
                 if task.task_try_count < self.err_limit:
-                    self.logger.error('[items] Restart task with url {}, attempt {}'.format(task.url, task.task_try_count))
-                    yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count + 1,
-                               raw=True)
+                    self.logger.error('[{}] Restart task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
+                    yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count + 1, raw=True)
                 else:
-                    self.logger.error('[items] Skip task with url {}, attempt {}'.format(task.url, task.task_try_count))
+                    self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
 
                 return
 
@@ -132,9 +102,9 @@ class DSpider(Spider):
                 # PRICE
                 price = row.select('./span[@class="price"]').text().replace(self.const_price_sep, '.').replace(' ', '')
                 # check regex
-                price_re_result = Ree.price_extractor.match(price)
+                price_re_result = Ree.float.match(price)
                 if not price_re_result or price == '':
-                    self.logger.warning('[items] Skip item, because price is {} (line: {})'.format(price, index, ))
+                    self.logger.warning('[{}] Skip item, because price is {} (line: {})'.format(task.name, price, index))
                     continue
 
                 # NAME
@@ -144,7 +114,7 @@ class DSpider(Spider):
                 count = row.select('./span[@class="in-stock"]').text().replace(' ', '')
                 # skip if count is wrong
                 if not Ree.number.match(count):
-                    self.logger.warning('[items] Count {} is not a number, skip (url: {})'.format(count, task.url))
+                    self.logger.warning('[{}] Count {} is not a number, skip (url: {})'.format(task.name, count, task.url))
                     continue
                 # replace if needed
                 if count == '0':
@@ -157,11 +127,8 @@ class DSpider(Spider):
                     unit = 'ед.'
 
                 # OUTPUT
-                self.logger.debug('[items] Item added, index {} at url {}'.format(index, task.url))
-                self.result.writerow([item_name.encode(self.const_enc, 'replace').decode('cp1251'), count, unit, price])
+                self.logger.debug('[{}] Item added, index {} at url {}'.format(task.name, index, task.url))
+                self.result.writerow([fix_text_encoding(item_name, self.const_enc), count, unit, price])
 
         except Exception as e:
-            html = get_body(grab)
-            err = '[items] Url {} parse failed 2 (e: {}), debug: {}'.format(task.url, e, html)
-            Output.print(err)
-            self.logger.error(err)
+            self._process_error(grab, task, e)

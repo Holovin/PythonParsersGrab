@@ -15,9 +15,8 @@ from helpers.url_generator import UrlGenerator
 # noinspection PyUnusedLocal
 class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
-    domain = '{uri.scheme}://{uri.netloc}/'.format(uri=urllib.parse.urlparse(Config.get_seq('SITE_URL')[0]))
 
-    def __init__(self, thread_number, logger_name, writer, try_limit=0):
+    def __init__(self, thread_number, writer, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
         DSpider._check_body_errors = check_body_errors
         DSpider._process_error = process_error
@@ -35,7 +34,7 @@ class DSpider(Spider):
         self.logger.debug('[{}] Initial url: {}'.format(task.name, task.url))
 
         if self._check_body_errors(grab, task):
-            self.logger.fatal('[start] Err task with url {}, attempt {}'.format(task.url, task.task_try_count))
+            self.logger.fatal('[{}] Err task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
             return
 
         try:
@@ -48,7 +47,7 @@ class DSpider(Spider):
                 url = url_gen.get_page(p)
                 yield Task('parse_page', url=url, priority=90)
 
-            self.logger.info('[prep] Tasks added...')
+            self.logger.info('[{}] Tasks added...'.format(task.name))
 
         except Exception as e:
             self._process_error(grab, task, e)

@@ -45,7 +45,7 @@ class DSpider(Spider):
         self.logger.debug('[{}] Initial url: {}'.format(task.name, task.url))
 
         if self._check_body_errors(grab, task):
-            self.logger.fatal('[start] Err task with url {}, attempt {}'.format(task.url, task.task_try_count))
+            self.logger.fatal('[{}] Err task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
             return
 
         try:
