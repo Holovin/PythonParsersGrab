@@ -30,9 +30,10 @@ class DSpider(Spider):
         return cookies_init(self.cookie_jar, g)
 
     def task_initial(self, grab, task):
+        self.logger.debug('[{}] Initial url: {}'.format(task.name, task.url))
+
         if self._check_body_errors(grab, task):
-            err = '[start] Err task with url {}, attempt {}'.format(task.url, task.task_try_count)
-            self.logger.fatal(err)
+            self.logger.fatal('[start] Err task with url {}, attempt {}'.format(task.url, task.task_try_count))
             return
 
         try:

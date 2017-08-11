@@ -20,16 +20,19 @@ class DSpider(Spider):
         DSpider._common_init = common_init
         self._common_init(writer, try_limit)
 
-        Ree.is_number()
+        Ree.init()
         Ree.is_page_number(Config.get('SITE_PAGE_PARAM'))
-        Ree.is_float()
 
     def create_grab_instance(self, **kwargs):
         g = super(DSpider, self).create_grab_instance(**kwargs)
         return cookies_init(self.cookie_jar, g)
 
     def task_initial(self, grab, task):
-        self.logger.debug('[{}] Parse page: {}'.format(task.name, task.url))
+        self.logger.debug('[{}] Initial url: {}'.format(task.name, task.url))
+
+        if self._check_body_errors(grab, task):
+            self.logger.fatal('[start] Err task with url {}, attempt {}'.format(task.url, task.task_try_count))
+            return
 
         try:
             if self._check_body_errors(grab, task):
