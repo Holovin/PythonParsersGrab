@@ -7,10 +7,10 @@ import time
 import sys
 
 from functools import reduce
+from datetime import datetime
 
 from dev.logger import logger_setup
 from helpers.config import Config
-from helpers.output import Output
 
 
 def init_loggers():
@@ -37,16 +37,16 @@ def init_loggers():
 
 
 def process_stats(stats):
-    if not stats:
-        return ''
+    output = ''
 
-    output = 'Stats:\n'
+    if not stats:
+        return output
 
     _stats = sorted(stats.items(), key=operator.itemgetter(1), reverse=True)
     _max = reduce(lambda a, b: a+b, stats.values())
 
     for row in _stats:
-        output += 'Code: {}, count: {}% ({} / {})'.format(row[0], row[1]/_max * 100, row[1], _max)
+        output += 'Code: {}, count: {}% ({} / {})\n'.format(row[0], row[1]/_max * 100, row[1], _max)
 
     return output
 
@@ -61,7 +61,7 @@ def fix_dirs():
 
 
 def parser_loader(file_name):
-    return getattr(importlib.import_module('parser.{}'.format(file_name)), 'DSpider')
+    return getattr(importlib.import_module('d_parser.{}'.format(file_name)), 'DSpider')
 
 
 def load_config():
@@ -76,9 +76,6 @@ def main():
     # load config
     if not load_config():
         exit(2)
-
-    # output config
-    Output(True if Config.get('APP_CAN_OUTPUT') == 'True' else False)
 
     # output dirs
     fix_dirs()
@@ -97,14 +94,10 @@ def main():
         writer = csv.writer(output, delimiter=';')
 
         try:
+            logger.info('{} :: Start...'.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S')))
             threads_counter = int(Config.get('APP_THREAD_COUNT'))
-            DSpider = parser_loader(Config.get('APP_PARSER'))
-            bot = DSpider(
-                thread_number=threads_counter,
-                logger_name='ddd_site_parse',
-                writer=writer,
-                try_limit=int(Config.get('APP_TRY_LIMIT')),
-            )
+            d_spider = parser_loader(Config.get('APP_PARSER'))
+            bot = d_spider(thread_number=threads_counter, writer=writer, try_limit=int(Config.get('APP_TRY_LIMIT')))
             bot.run()
             logger.info('End with stats: {}'.format(process_stats(bot.status_counter)))
 
@@ -112,9 +105,8 @@ def main():
             err = 'App core fatal error: {}'.format(e)
 
             logger.fatal(err)
-            Output.print(err)
 
-    logger.info('End app...\n\n')
+    logger.info('{} :: End...'.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S')))
 
 
 if __name__ == '__main__':
