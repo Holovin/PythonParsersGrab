@@ -99,6 +99,8 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# user
 .idea/
-log.txt
-result.csv
+out/
+config/
