@@ -75,10 +75,4 @@ class DSpider(Spider):
                 self.result.writerow([item_name, count, unit, price])
 
         except Exception as e:
-            print(e)
-            pass
-            #self._process_error(grab, task, e)
-
-
-def do_post_work():
-    print('Test!')
+            self._process_error(grab, task, e)
