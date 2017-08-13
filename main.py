@@ -11,6 +11,7 @@ from datetime import datetime
 
 from dev.logger import logger_setup
 from helpers.config import Config
+from helpers.module_loader import ModuleLoader
 
 
 def init_loggers():
@@ -60,10 +61,6 @@ def fix_dirs():
         os.makedirs(log_dir)
 
 
-def parser_loader(file_name):
-    return getattr(importlib.import_module('d_parser.{}'.format(file_name)), 'DSpider')
-
-
 def load_config():
     if len(sys.argv) > 1:
         Config.load(os.path.join(os.path.dirname(__file__), 'config'), sys.argv[1])
@@ -89,6 +86,17 @@ def main():
     output_file_name = time.strftime('%d_%m_%Y') + '.csv'
     output_path = os.path.join(Config.get('APP_OUTPUT_DIR'), output_file_name)
 
+    # loader
+    loader = ModuleLoader('d_parser.{}'.format(Config.get('APP_PARSER')))
+    d_spider = loader.get('DSpider')
+
+    # post-work
+    need_post = Config.get('APP_NEED_POST', '')
+    if need_post == 'True':
+        d_post_work = loader.get('do_post_work')
+    else:
+        d_post_work = None
+
     # bot
     with open(output_path, 'w', newline='', encoding=Config.get('APP_OUTPUT_ENC')) as output:
         writer = csv.writer(output, delimiter=';')
@@ -96,10 +104,13 @@ def main():
         try:
             logger.info('{} :: Start...'.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S')))
             threads_counter = int(Config.get('APP_THREAD_COUNT'))
-            d_spider = parser_loader(Config.get('APP_PARSER'))
             bot = d_spider(thread_number=threads_counter, writer=writer, try_limit=int(Config.get('APP_TRY_LIMIT')))
             bot.run()
-            logger.info('End with stats: {}'.format(process_stats(bot.status_counter)))
+
+            if need_post and d_post_work:
+                d_post_work()
+
+            logger.info('End with stats: \n{}'.format(process_stats(bot.status_counter)))
 
         except Exception as e:
             err = 'App core fatal error: {}'.format(e)

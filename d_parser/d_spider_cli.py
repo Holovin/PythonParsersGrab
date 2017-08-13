@@ -31,24 +31,16 @@ class DSpider(Spider):
         self.logger.debug('[{}] Initial url: {}'.format(task.name, task.url))
 
         if self._check_body_errors(grab, task):
-            self.logger.fatal('[start] Err task with url {}, attempt {}'.format(task.url, task.task_try_count))
+            self.logger.fatal('[{}] Err task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
             return
 
         try:
-            if self._check_body_errors(grab, task):
-                if task.task_try_count < self.err_limit:
-                    self.logger.error('[{}] Restart task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-                    yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count+1, raw=True)
-                else:
-                    self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-                return
-
             table_wrapper = grab.doc.select('//div[contains(@class, "table-wrapper")]')
 
             # UNIT (global for all page)
             unit = table_wrapper.select('./table/thead//th[5]').text().split(', ')[1].strip()
 
-            rows = table_wrapper.select('./table/tbody/tr')
+            rows = table_wrapper.select('./table/tbody/tr[td]')
 
             for index, row in enumerate(rows):
                 # COUNT
@@ -57,7 +49,8 @@ class DSpider(Spider):
 
                 # skip if count is wrong
                 if not Ree.number.match(count):
-                    self.logger.warning('[{}] Text {} is not a number, skip (url: {})'.format(task.name, count, task.url))
+                    # here skipped first 2 rows, its ok
+                    self.logger.debug('[{}] Text {} is not a number, skip (url: {})'.format(task.name, count, task.url))
                     continue
 
                 # PRICE
@@ -82,4 +75,10 @@ class DSpider(Spider):
                 self.result.writerow([item_name, count, unit, price])
 
         except Exception as e:
-            self._process_error(grab, task, e)
+            print(e)
+            pass
+            #self._process_error(grab, task, e)
+
+
+def do_post_work():
+    print('Test!')
