@@ -1,5 +1,3 @@
-import random
-
 from grab.spider import Spider, Task
 
 from d_parser.helpers.cookies_init import cookies_init

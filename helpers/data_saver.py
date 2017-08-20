@@ -13,8 +13,6 @@ class DataSaver:
         self.output_dir = output_dir
         self.encoding = encoding
 
-    # helpers
-
     # save methods
     def save(self, newline='', delimiter=';'):
         output_file_name = '{}.{}'.format(time.strftime('%d_%m_%Y'), 'csv')
