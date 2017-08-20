@@ -27,6 +27,3 @@ def get_max_page(items, max_page=1, err_page=0):
 
     return max_page
 
-
-def fix_text_encoding(text, enc):
-    return text.encode(enc, 'replace').decode(enc)

@@ -11,6 +11,7 @@ from datetime import datetime
 
 from dev.logger import logger_setup
 from helpers.config import Config
+from helpers.data_saver import DataSaver
 from helpers.module_loader import ModuleLoader
 
 
@@ -82,40 +83,48 @@ def main():
     logger.info(' --- ')
     logger.info('Start app...')
 
-    # output
-    output_file_name = time.strftime('%d_%m_%Y') + '.csv'
-    output_path = os.path.join(Config.get('APP_OUTPUT_DIR'), output_file_name)
+    # output category for detect save mode
+    # need for use after parse, but read before for prevent useless parse (if will errors)
+    cat = Config.get('APP_OUTPUT_CAT')
 
-    # loader
+    # parser loader
     loader = ModuleLoader('d_parser.{}'.format(Config.get('APP_PARSER')))
     d_spider = loader.get('DSpider')
 
-    # post-work
+    # load post-worker
     need_post = Config.get('APP_NEED_POST', '')
     if need_post == 'True':
         d_post_work = loader.get('do_post_work')
     else:
         d_post_work = None
 
-    # bot
-    with open(output_path, 'w', newline='', encoding=Config.get('APP_OUTPUT_ENC')) as output:
-        writer = csv.writer(output, delimiter=';')
+    # main
+    try:
+        # bot parser
+        logger.info('{} :: Start...'.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S')))
+        threads_counter = int(Config.get('APP_THREAD_COUNT'))
+        bot = d_spider(thread_number=threads_counter, try_limit=int(Config.get('APP_TRY_LIMIT')))
+        bot.run()
 
-        try:
-            logger.info('{} :: Start...'.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S')))
-            threads_counter = int(Config.get('APP_THREAD_COUNT'))
-            bot = d_spider(thread_number=threads_counter, writer=writer, try_limit=int(Config.get('APP_TRY_LIMIT')))
-            bot.run()
+        # post work
+        if need_post and d_post_work:
+            d_post_work()
 
-            if need_post and d_post_work:
-                d_post_work()
+        # save output
+        saver = DataSaver(bot.result, Config.get('APP_OUTPUT_DIR'), Config.get('APP_OUTPUT_ENC'))
 
-            logger.info('End with stats: \n{}'.format(process_stats(bot.status_counter)))
+        # single file
+        if cat == '':
+            saver.save()
 
-        except Exception as e:
-            err = 'App core fatal error: {}'.format(e)
+        # separate categories
+        else:
+            saver.save_by_category(cat)
 
-            logger.fatal(err)
+        logger.info('End with stats: \n{}'.format(process_stats(bot.status_counter)))
+
+    except Exception as e:
+        logger.fatal('App core fatal error: {}'.format(e))
 
     logger.info('{} :: End...'.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S')))
 
