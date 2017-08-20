@@ -76,9 +76,7 @@ class DSpider(Spider):
                    'name': item_name,
                    'count': count,
                    'unit': unit,
-                   'price': price,
-                   'test': str(random.randint(1, 2)) + 'zz'
-
+                   'price': price
                 })
 
         except Exception as e:
