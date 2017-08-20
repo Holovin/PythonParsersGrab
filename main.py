@@ -91,13 +91,6 @@ def main():
     loader = ModuleLoader('d_parser.{}'.format(Config.get('APP_PARSER')))
     d_spider = loader.get('DSpider')
 
-    # load post-worker
-    need_post = Config.get('APP_NEED_POST', '')
-    if need_post == 'True':
-        d_post_work = loader.get('do_post_work')
-    else:
-        d_post_work = None
-
     # main
     try:
         # bot parser
@@ -107,8 +100,8 @@ def main():
         bot.run()
 
         # post work
-        if need_post and d_post_work:
-            d_post_work()
+        if Config.get('APP_NEED_POST', ''):
+            bot.d_post_work()
 
         # save output
         saver = DataSaver(bot.result, Config.get('APP_OUTPUT_DIR'), Config.get('APP_OUTPUT_ENC'))
