@@ -14,12 +14,6 @@ class DataSaver:
         self.encoding = encoding
 
     # helpers
-    def fix_field_encoding(self, field, encoding, mode='replace'):
-        if not encoding:
-            encoding = self.encoding
-
-        for index, row in enumerate(self.data):
-            row[index][field] = row[index][field].encode(encoding, mode).decode(encoding)
 
     # save methods
     def save(self, newline='', delimiter=';'):
@@ -53,5 +47,15 @@ class DataSaver:
             writer = csv.writer(output, delimiter=delimiter)
 
             for row in data:
-                # Maybe bring out key names?
-                writer.writerow([row['name'], row['count'], row['unit'], row['price']])
+                try:
+                    # Maybe bring out key names?
+                    writer.writerow([row['name'], row['count'], row['unit'], row['price']])
+                except UnicodeEncodeError as e:
+                    logging.debug('[E: {}] Write row error, trying fix encoding: [{}]'.format(e, row))
+                    DataSaver.fix_row_encoding(row, encoding)
+                    writer.writerow([row['name'], row['count'], row['unit'], row['price']])
+
+    @staticmethod
+    def fix_row_encoding(row, encoding, mode='replace'):
+        for field in row.keys():
+            row[field] = row[field].encode(encoding, mode).decode(encoding)

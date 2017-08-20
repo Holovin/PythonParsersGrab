@@ -27,7 +27,7 @@ def logger_setup(log_file, loggers=None, touch_root=False):
         if full_debug == 'True':
             root.addHandler(console)
 
-    handler = RotatingFileHandler(log_file, backupCount=1)
+    handler = RotatingFileHandler(log_file, backupCount=1, encoding='utf8')
     handler.setLevel(log_level)
     handler.setFormatter(log_formatter)
     handler.doRollover()
