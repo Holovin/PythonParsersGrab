@@ -22,7 +22,7 @@ class Config:
     def get(key, default_value=None):
         value = os.environ.get(key)
 
-        if not value:
+        if value is None:
             if default_value is not None:
                 return default_value
 
