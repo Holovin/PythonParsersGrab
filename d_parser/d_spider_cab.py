@@ -1,4 +1,3 @@
-import logging
 import urllib.parse
 
 from grab import Grab
@@ -17,12 +16,12 @@ from helpers.url_generator import UrlGenerator
 class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
 
-    def __init__(self, thread_number, writer, try_limit=0):
+    def __init__(self, thread_number, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
         DSpider._check_body_errors = check_body_errors
         DSpider._process_error = process_error
         DSpider._common_init = common_init
-        self._common_init(writer, try_limit)
+        self._common_init(try_limit)
 
         Ree.init()
         Ree.is_page_number(Config.get('SITE_PAGE_PARAM'))
@@ -99,7 +98,13 @@ class DSpider(Spider):
                     price = Config.get('APP_PRICE_ON_REQUEST')
 
                 # UNIT
-                count, unit = count.split(' ', maxsplit=1)
+                try:
+                    count, unit = count.split(' ', maxsplit=1)
+
+                except ValueError:
+                    # if take "8000" instead "8000 m."
+                    unit = 'ед.'
+
                 # use default value
                 if unit == '':
                     unit = 'ед.'
@@ -109,7 +114,12 @@ class DSpider(Spider):
 
                 # OUTPUT
                 self.logger.debug('[{}] Item added, index {} at url {}'.format(task.name, index, task.url))
-                self.result.writerow([item_name, count, unit, price])
+                self.result.append({
+                    'name': item_name,
+                    'count': count,
+                    'unit': unit,
+                    'price': price
+                })
 
         except Exception as e:
             self._process_error(grab, task, e)
