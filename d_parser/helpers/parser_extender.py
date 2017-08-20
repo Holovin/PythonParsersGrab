@@ -29,14 +29,17 @@ def process_error(self, grab, task, exception):
     except KeyError:
         self.status_counter['EXC'] = 1
 
-    html = get_body(grab)
-    err = '[{}] Url {} parse failed (e: {}), debug: {}'.format(task.name, task.url, exception, html)
-    self.logger.error(err)
+    if Config.get('APP_LOG_HTML_ERR', '') == 'True':
+        html = get_body(grab)
+    else:
+        html = '(skipped by config)'
+
+    self.logger.error('[{}] Url {} parse failed (e: {}), debug: {}'.format(task.name, task.url, exception, html))
 
 
-def common_init(self, writer, try_limit):
+def common_init(self, try_limit):
+    self.result = []
     self.logger = logger
-    self.result = writer
     self.status_counter = {}
     self.cookie_jar = {}
     self.err_limit = try_limit
