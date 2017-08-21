@@ -34,7 +34,7 @@ def process_error(self, grab, task, exception):
     else:
         html = '(skipped by config)'
 
-    self.logger.error('[{}] Url {} parse failed (e: {}), debug: {}'.format(task.name, task.url, exception, html))
+    self.logger.error('[{}] Url {} parse failed ({}: {}), debug: {}'.format(task.name, task.url, type(exception).__name__, exception, html))
 
 
 def common_init(self, try_limit):
