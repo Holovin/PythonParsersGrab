@@ -1,5 +1,4 @@
 from urllib.parse import urljoin
-
 from grab.spider import Spider, Task
 
 from d_parser.helpers.cookies_init import cookies_init
@@ -7,13 +6,11 @@ from d_parser.helpers.el_parser import get_max_page
 from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init
 from d_parser.helpers.re_set import Ree
 from helpers.config import Config
+from helpers.url_generator import UrlGenerator
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
 # Warn: noinspection PyUnusedLocal
-from helpers.url_generator import UrlGenerator
-
-
 class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
 
