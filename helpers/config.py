@@ -1,3 +1,7 @@
+# config.py
+# Config loader, wrapper around load_dotenv lib functions
+# r1
+
 import os
 from dotenv import load_dotenv
 
@@ -22,7 +26,7 @@ class Config:
     def get(key, default_value=None):
         value = os.environ.get(key)
 
-        if not value:
+        if value is None:
             if default_value is not None:
                 return default_value
 

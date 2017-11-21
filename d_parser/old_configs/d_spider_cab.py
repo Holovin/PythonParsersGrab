@@ -1,5 +1,6 @@
-import logging
+import urllib.parse
 
+from grab import Grab
 from grab.spider import Spider, Task
 
 from d_parser.helpers.cookies_init import cookies_init
@@ -15,15 +16,25 @@ from helpers.url_generator import UrlGenerator
 class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
 
-    def __init__(self, thread_number, writer, try_limit=0):
+    def __init__(self, thread_number, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
         DSpider._check_body_errors = check_body_errors
         DSpider._process_error = process_error
         DSpider._common_init = common_init
-        self._common_init(writer, try_limit)
+        self._common_init(try_limit)
 
         Ree.init()
         Ree.is_page_number(Config.get('SITE_PAGE_PARAM'))
+
+    def prepare(self):
+        g = Grab()
+        g.go(Config.get_seq('SITE_URL')[0])
+
+        url = urllib.parse.urljoin(self.domain, '/udata/content/setSortParams/name/ascending')
+        g.setup(post={})
+        g.go(url)
+
+        self.cookie_jar = g.cookies.cookiejar
 
     def create_grab_instance(self, **kwargs):
         g = super(DSpider, self).create_grab_instance(**kwargs)
@@ -37,14 +48,14 @@ class DSpider(Spider):
             return
 
         try:
-            items = grab.doc.select('//div[@class="catalog-pagenav"]//a[contains(@href, "{}")]'.format(Config.get('SITE_PAGE_PARAM')))
-            max_page = get_max_page(items)
+            items = grab.doc.select('//div[contains(@class, "pagination")]//a[contains(@href, "{}")]'.format(Config.get('SITE_PAGE_PARAM')))
+            max_page = get_max_page(items, 0, -1)
 
             self.logger.info('[{}] Task: {}, max_page: {}'.format(task.name, task.url, max_page))
 
             url_gen = UrlGenerator(task.url, Config.get('SITE_PAGE_PARAM'))
 
-            for p in range(1, max_page + 1):
+            for p in range(0, max_page + 1):
                 url = url_gen.get_page(p)
                 yield Task('parse_page', url=url, priority=90)
 
@@ -65,44 +76,50 @@ class DSpider(Spider):
                     self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
                 return
 
-            table = grab.doc.select('//div[@class="catalog-section-it-table"]')
-
-            # UNIT (global for all page)
-            unit = table.select('.//div[@class="catalog_quantity"]').text().split(', ')[1].strip()
-
-            rows = table.select('.//div[contains(@class, "catalog-section-it-row")]')
+            rows = grab.doc.select('//div[@class="products-wrap"]//table[contains(@class, "products")]')
 
             for index, row in enumerate(rows):
                 # COUNT
-                count = row.select('./div[contains(@class, "catalog_quantity")]').text().strip()
+                count = row.select('.//td[5]/span').text().strip()
                 # skip if count is wrong
-                if count == 'Ожидаетсяпоставка':
+                if count == 'под заказ':
                     self.logger.debug('[{}] Text {} is not a number, skip (url: {})'.format(task.name, count, task.url))
                     continue
-                # skip if count is wrong with err
-                if not Ree.float.match(count):
-                    self.logger.warning('[{}] Text {} is not a number, skip (url: {})'.format(task.name, count, task.url))
-                    continue
-
-                count = count.replace(',', '.')
 
                 # PRICE
-                price = Config.get('APP_PRICE_ON_REQUEST')
+                price = row.select('.//td[3]/b/span').text().strip()
+                # check regex
+                price_re_result = Ree.float.match(price)
+                if (not price_re_result or (price_re_result and float(price) < 0)) and price != 'по запросу':
+                    self.logger.warning('[{}] Skip item, because price is {} (line: {})'.format(task.name, price, index))
+                    continue
+                # replace
+                if price == 'по запросу':
+                    price = Config.get('APP_PRICE_ON_REQUEST')
+
+                # UNIT
+                try:
+                    count, unit = count.split(' ', maxsplit=1)
+
+                except ValueError:
+                    # if take "8000" instead "8000 m."
+                    unit = 'ед.'
+
+                # use default value
+                if unit == '':
+                    unit = 'ед.'
 
                 # NAME
-                item_name = row.select('./div[@class="name"]').text().strip()
-
-                # Debug: go for all inner pages and try find price
-                # link = row.select('./div[@class="name"]/a').attr('href')
-                # yield Task('parse_items', url=urllib.parse.urljoin(self.domain, link), priority=100, raw=True)
+                item_name = row.select('.//td[2]').text().strip()
 
                 # OUTPUT
                 self.logger.debug('[{}] Item added, index {} at url {}'.format(task.name, index, task.url))
-                self.result.writerow([item_name, count, unit, price])
+                self.result.append({
+                    'name': item_name,
+                    'count': count,
+                    'unit': unit,
+                    'price': price
+                })
 
         except Exception as e:
             self._process_error(grab, task, e)
-
-    # def task_parse_items(self, grab, task):
-    #     if 'Узнать цену' not in get_body(grab):
-    #         print(task.url)

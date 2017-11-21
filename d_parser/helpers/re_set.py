@@ -1,6 +1,9 @@
-import re
+# re_set.py
+# Module for generating regex rules
+# r1
 
-from helpers.config import Config
+
+import re
 
 
 class Ree:
@@ -15,7 +18,7 @@ class Ree:
 
     @staticmethod
     def is_page_number(page_param):
-        Ree.page_number = re.compile('{}=(?P<page>\d+)'.format(page_param))
+        Ree.page_number = re.compile('(?P<param>{})=(?P<page>\d+)'.format(page_param))
 
     @staticmethod
     def is_float(price_sep=',.'):

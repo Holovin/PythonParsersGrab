@@ -1,5 +1,8 @@
+# url_generator.py
+# Some functions for create and modify urls
+# r1
 from urllib import parse
-from urllib.parse import urlencode, urljoin
+from urllib.parse import urlencode, urljoin, urlparse
 
 
 class UrlGenerator:
@@ -16,6 +19,10 @@ class UrlGenerator:
     @staticmethod
     def get_page_params(host, part, params=None):
         return UrlGenerator._url_append_params(urljoin(host, part), params)
+
+    @staticmethod
+    def get_host_from_url(url):
+        return '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url))
 
     @staticmethod
     def _url_append_params(url, params):

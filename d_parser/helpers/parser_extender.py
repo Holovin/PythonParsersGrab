@@ -1,10 +1,17 @@
+# parser_extender.py
+# Common parser functions (like check custom errors, count stat, etc)
+# r1
+
 import logging
 
-from d_parser.helpers import url_lib
-from d_parser.helpers.get_body import get_body
 from helpers.config import Config
+from helpers.url_generator import UrlGenerator
 
 logger = logging.getLogger('ddd_site_parse')
+
+
+def get_body(grab):
+    return grab.doc.unicode_body()
 
 
 def check_body_errors(self, grab, task):
@@ -29,16 +36,19 @@ def process_error(self, grab, task, exception):
     except KeyError:
         self.status_counter['EXC'] = 1
 
-    html = get_body(grab)
-    err = '[{}] Url {} parse failed (e: {}), debug: {}'.format(task.name, task.url, exception, html)
-    self.logger.error(err)
+    if Config.get('APP_LOG_HTML_ERR', '') == 'True':
+        html = get_body(grab)
+    else:
+        html = '(skipped by config)'
+
+    self.logger.error('[{}] Url {} parse failed ({}: {}), debug: {}'.format(task.name, task.url, type(exception).__name__, exception, html))
 
 
-def common_init(self, writer, try_limit):
+def common_init(self, try_limit):
+    self.result = []
     self.logger = logger
-    self.result = writer
     self.status_counter = {}
     self.cookie_jar = {}
     self.err_limit = try_limit
-    self.domain = url_lib.get_host_from_url(Config.get_seq('SITE_URL')[0])
+    self.domain = UrlGenerator.get_host_from_url(Config.get_seq('SITE_URL')[0])
     self.logger.info('Init parser ok...')

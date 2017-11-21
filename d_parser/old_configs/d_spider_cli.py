@@ -1,5 +1,3 @@
-import logging
-
 from grab.spider import Spider, Task
 
 from d_parser.helpers.cookies_init import cookies_init
@@ -13,12 +11,12 @@ from helpers.config import Config
 class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
 
-    def __init__(self, thread_number, writer, try_limit=0):
+    def __init__(self, thread_number, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
         DSpider._check_body_errors = check_body_errors
         DSpider._process_error = process_error
         DSpider._common_init = common_init
-        self._common_init(writer, try_limit)
+        self._common_init(try_limit)
 
         Ree.init()
         Ree.is_page_number(Config.get('SITE_PAGE_PARAM'))
@@ -31,24 +29,16 @@ class DSpider(Spider):
         self.logger.debug('[{}] Initial url: {}'.format(task.name, task.url))
 
         if self._check_body_errors(grab, task):
-            self.logger.fatal('[start] Err task with url {}, attempt {}'.format(task.url, task.task_try_count))
+            self.logger.fatal('[{}] Err task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
             return
 
         try:
-            if self._check_body_errors(grab, task):
-                if task.task_try_count < self.err_limit:
-                    self.logger.error('[{}] Restart task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-                    yield Task('parse_items', url=task.url, priority=110, task_try_count=task.task_try_count+1, raw=True)
-                else:
-                    self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-                return
-
             table_wrapper = grab.doc.select('//div[contains(@class, "table-wrapper")]')
 
             # UNIT (global for all page)
             unit = table_wrapper.select('./table/thead//th[5]').text().split(', ')[1].strip()
 
-            rows = table_wrapper.select('./table/tbody/tr')
+            rows = table_wrapper.select('./table/tbody/tr[td]')
 
             for index, row in enumerate(rows):
                 # COUNT
@@ -57,7 +47,8 @@ class DSpider(Spider):
 
                 # skip if count is wrong
                 if not Ree.number.match(count):
-                    self.logger.warning('[{}] Text {} is not a number, skip (url: {})'.format(task.name, count, task.url))
+                    # here skipped first 2 rows, its ok
+                    self.logger.debug('[{}] Text {} is not a number, skip (url: {})'.format(task.name, count, task.url))
                     continue
 
                 # PRICE
@@ -79,7 +70,12 @@ class DSpider(Spider):
 
                 # OUTPUT
                 self.logger.debug('[{}] Item added, index {} at url {}'.format(task.name, index, task.url))
-                self.result.writerow([item_name, count, unit, price])
+                self.result.append({
+                   'name': item_name,
+                   'count': count,
+                   'unit': unit,
+                   'price': price
+                })
 
         except Exception as e:
             self._process_error(grab, task, e)
