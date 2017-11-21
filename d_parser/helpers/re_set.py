@@ -1,3 +1,8 @@
+# re_set.py
+# Module for generating regex rules
+# r1
+
+
 import re
 
 

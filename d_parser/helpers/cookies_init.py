@@ -1,3 +1,8 @@
+# cookies_init.py
+# Module for init cookies from config
+# r1
+
+
 from helpers.config import Config
 
 

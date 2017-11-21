@@ -1,9 +1,10 @@
-import csv
-import importlib
+# main.py
+# Parser runner, based on grab framework
+# r25
+
 import logging
 import operator
 import os
-import time
 import sys
 
 from functools import reduce
@@ -32,6 +33,7 @@ def init_loggers():
         ]
     )
 
+    # TODO
     logger = logging.getLogger('ddd_site_parse')
     logger.addHandler(logging.NullHandler())
 
@@ -53,15 +55,6 @@ def process_stats(stats):
     return output
 
 
-def fix_dirs():
-    if not os.path.exists(Config.get('APP_OUTPUT_DIR')):
-        os.makedirs(Config.get('APP_OUTPUT_DIR'))
-
-    log_dir = os.path.join(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'))
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-
 def load_config():
     if len(sys.argv) > 1:
         Config.load(os.path.join(os.path.dirname(__file__), 'config'), sys.argv[1])
@@ -75,8 +68,8 @@ def main():
     if not load_config():
         exit(2)
 
-    # output dirs
-    fix_dirs()
+    # output dirs init
+    saver = DataSaver(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'), Config.get('APP_OUTPUT_ENC'))
 
     # log
     logger = init_loggers()
@@ -103,11 +96,11 @@ def main():
         if Config.get('APP_NEED_POST', ''):
             bot.d_post_work()
 
-        # save output
-        saver = DataSaver(bot.result, Config.get('APP_OUTPUT_DIR'), Config.get('APP_OUTPUT_ENC'))
+        # pass data
+        saver.set_data(bot.result)
 
         # single file
-        if cat == '':
+        if not cat:
             saver.save()
 
         # separate categories

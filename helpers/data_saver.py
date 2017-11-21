@@ -1,3 +1,8 @@
+# data_saver.py
+# Module for save data as single CSV or separated as some CSV files
+# r2
+# TODO: rework save method for support dynamic columns
+
 import csv
 import logging
 import time
@@ -8,10 +13,14 @@ logger = logging.getLogger('ddd_site_parse')
 
 
 class DataSaver:
-    def __init__(self, data, output_dir, encoding):
-        self.data = data
+    def __init__(self, output_dir, log_dir, encoding):
+        self.data = []
         self.output_dir = output_dir
+        self.log_dir = log_dir
         self.encoding = encoding
+
+    def set_data(self, data):
+        self.data = data
 
     # save methods
     def save(self, newline='', delimiter=';'):
@@ -35,6 +44,14 @@ class DataSaver:
             output_file_name = '{}_{}.{}'.format(time.strftime('%d_%m_%Y'), cat, 'csv')
             logging.info('Saving cats to file {}'.format(output_file_name))
             self._save(result[cat], output_file_name, self.output_dir, self.encoding, newline, delimiter)
+
+    def fix_dirs(self):
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+
+        log_dir = os.path.join(self.output_dir, self.log_dir)
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
 
     # private
     @staticmethod

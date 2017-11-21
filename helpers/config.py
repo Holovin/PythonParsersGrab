@@ -1,3 +1,7 @@
+# config.py
+# Config loader, wrapper around load_dotenv lib functions
+# r1
+
 import os
 from dotenv import load_dotenv
 

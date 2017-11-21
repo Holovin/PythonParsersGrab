@@ -1,4 +1,4 @@
-# DParsers-Grab-Core (v2.4-beta)
+# DParsers-Grab-Core (v2.4.1-beta)
 Common core for site parsing with python grab framework.
 
 ## Installation (for clean Ubuntu Server 16.04)
