@@ -1,6 +1,7 @@
 # main.py
 # Parser runner, based on grab framework
-# r25
+# r26
+CURRENT_VERSION = 26
 
 import logging
 import operator
@@ -70,6 +71,7 @@ def main():
 
     # output dirs init
     saver = DataSaver(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'), Config.get('APP_OUTPUT_ENC'))
+    saver.fix_dirs()
 
     # log
     logger = init_loggers()
@@ -82,6 +84,13 @@ def main():
 
     # parser loader
     loader = ModuleLoader('d_parser.{}'.format(Config.get('APP_PARSER')))
+
+    # check version
+    if not loader.check_version(CURRENT_VERSION):
+        logger.fatal('Incompatible parser version ({} > {}). Update source and run script again'.format(CURRENT_VERSION, loader.version))
+        exit(3)
+
+    # load spider script
     d_spider = loader.get('DSpider')
 
     # main
@@ -101,11 +110,11 @@ def main():
 
         # single file
         if not cat:
-            saver.save()
+            saver.save(Config.get_seq('APP_SAVE_FIELDS'))
 
         # separate categories
         else:
-            saver.save_by_category(cat)
+            saver.save_by_category(cat, Config.get_seq('APP_SAVE_FIELDS'))
 
         logger.info('End with stats: \n{}'.format(process_stats(bot.status_counter)))
 
