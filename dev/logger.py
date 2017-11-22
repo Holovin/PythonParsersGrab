@@ -44,7 +44,7 @@ def logger_setup(log_file, loggers=None, touch_root=False):
             logger = logging.getLogger(logger_name)
             logger.setLevel(log_level)
             logger.addHandler(handler)
-            # logger.propagate = False
+            logger.propagate = False
 
             if full_debug == 'True':
                 logger.addHandler(console)
