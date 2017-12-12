@@ -15,6 +15,7 @@ class Ree:
     def init():
         Ree.is_float()
         Ree.is_number()
+        Ree.is_page_number('')
 
     @staticmethod
     def is_page_number(page_param):
