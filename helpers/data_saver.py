@@ -60,7 +60,8 @@ class DataSaver:
             writer = csv.writer(output, delimiter=delimiter)
 
             if len(data) > 0:
-                data_fields_checked = [f for f in data_fields if f not in data[0]]
+                # check valid field records or not - take data[0] because all items have same fields
+                data_fields_checked = [f for f in data_fields if f in data[0]]
 
                 if len(data_fields) != len(data_fields_checked):
                     logger.error('Undefined properties removed! Old: {}  vs  new: {}'.format(data_fields, data_fields_checked))
@@ -70,12 +71,12 @@ class DataSaver:
 
             for row in data:
                 try:
-                    writer.writerow(data_fields_checked)
+                    writer.writerow([row[field] for field in data_fields])
                 except UnicodeEncodeError as e:
                     logging.debug('[E: {}] Write row error, trying fix encoding: [{}]'.format(e, row))
                     DataSaver.fix_row_encoding(row, encoding)
 
-                    writer.writerow(data_fields_checked)
+                    writer.writerow([row[field] for field in data_fields])
 
     @staticmethod
     def fix_row_encoding(row, encoding, mode='replace'):

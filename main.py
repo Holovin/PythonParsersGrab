@@ -67,6 +67,7 @@ def load_config():
 def main():
     # load config
     if not load_config():
+        print('Empty config?')
         exit(2)
 
     # output dirs init
@@ -96,9 +97,9 @@ def main():
     # main
     try:
         # bot parser
-        logger.info('{} :: Start...'.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S')))
-        threads_counter = int(Config.get('APP_THREAD_COUNT'))
-        bot = d_spider(thread_number=threads_counter, try_limit=int(Config.get('APP_TRY_LIMIT')))
+        logger.info('Start...')
+        threads_counter = int(Config.get('APP_THREAD_COUNT', 1))
+        bot = d_spider(thread_number=threads_counter, try_limit=int(Config.get('APP_TRY_LIMIT', 1)))
         bot.run()
 
         # post work
