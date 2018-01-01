@@ -1,4 +1,4 @@
-# DParsers-Grab-Core (v2.4.1-beta)
+# DParsers-Grab-Core (v2.5-beta)
 Common core for site parsing with python grab framework.
 
 ## Installation (for clean Ubuntu Server 16.04)
@@ -20,6 +20,7 @@ Common core for site parsing with python grab framework.
 
 ## Config {site}.env description
 - `APP_PARSER` - name of file which store parser logic (Spider extended class)
+- `APP_SAVE_FIELDS_{NUMBER}` - string name fields for save in file (other fields dropped, even if parsed)
 - `APP_THREAD_COUNT` - count of threads for grub.spider
 - `APP_TRY_LIMIT` - how many times app can repeat failed task
 - `APP_COOKIE_NAME` and `APP_COOKIE_VALUE` - if exist and non-empty - set this cookie before all requests

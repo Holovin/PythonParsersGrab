@@ -10,11 +10,12 @@ source activate d_parsers
 
 pip install grab python-dotenv -q
 
+# Upd: 12/12/2017 -- seems this fix not actual and all work without it
 # fix bug
 # libcurl link-time version (...) is older than compile-time version (...)
-pip uninstall pycurl -q
-export LD_LIBRARY_PATH=/usr/local/opt/curl/lib
-export LIBRARY_PATH=/usr/local/opt/curl/lib
-easy_install pycurl
+# pip uninstall pycurl -q
+# export LD_LIBRARY_PATH=/usr/local/opt/curl/lib
+# export LIBRARY_PATH=/usr/local/opt/curl/lib
+# easy_install pycurl
 
 source deactivate

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 
 class Config:
-    max_seq_size = 1000
+    max_seq_size = 50
     loaded = False
 
     @staticmethod
@@ -49,7 +49,7 @@ class Config:
             counter += 1
 
         if len(array) == 0:
-            raise ValueError('Empty seq values')
+            raise ValueError('Empty seq values [key = {}]'.format(key))
 
         return array
 

@@ -1,6 +1,7 @@
 # main.py
 # Parser runner, based on grab framework
-# r25
+# r26
+CURRENT_VERSION = 26
 
 import logging
 import operator
@@ -66,10 +67,12 @@ def load_config():
 def main():
     # load config
     if not load_config():
+        print('Empty config?')
         exit(2)
 
     # output dirs init
     saver = DataSaver(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'), Config.get('APP_OUTPUT_ENC'))
+    saver.fix_dirs()
 
     # log
     logger = init_loggers()
@@ -82,14 +85,21 @@ def main():
 
     # parser loader
     loader = ModuleLoader('d_parser.{}'.format(Config.get('APP_PARSER')))
+
+    # check version
+    if not loader.check_version(CURRENT_VERSION):
+        logger.fatal('Incompatible parser version ({} > {}). Update source and run script again'.format(CURRENT_VERSION, loader.version))
+        exit(3)
+
+    # load spider script
     d_spider = loader.get('DSpider')
 
     # main
     try:
         # bot parser
-        logger.info('{} :: Start...'.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S')))
-        threads_counter = int(Config.get('APP_THREAD_COUNT'))
-        bot = d_spider(thread_number=threads_counter, try_limit=int(Config.get('APP_TRY_LIMIT')))
+        logger.info('Start...')
+        threads_counter = int(Config.get('APP_THREAD_COUNT', 1))
+        bot = d_spider(thread_number=threads_counter, try_limit=int(Config.get('APP_TRY_LIMIT', 1)))
         bot.run()
 
         # post work
@@ -101,11 +111,11 @@ def main():
 
         # single file
         if not cat:
-            saver.save()
+            saver.save(Config.get_seq('APP_SAVE_FIELDS'))
 
         # separate categories
         else:
-            saver.save_by_category(cat)
+            saver.save_by_category(cat, Config.get_seq('APP_SAVE_FIELDS'))
 
         logger.info('End with stats: \n{}'.format(process_stats(bot.status_counter)))
 
