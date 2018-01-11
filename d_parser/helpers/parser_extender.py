@@ -3,6 +3,7 @@
 # r1
 
 import logging
+import traceback
 
 from helpers.config import Config
 from helpers.url_generator import UrlGenerator
@@ -41,7 +42,9 @@ def process_error(self, grab, task, exception):
     else:
         html = '(skipped by config)'
 
-    self.logger.error('[{}] Url {} parse failed ({}: {}), debug: {}'.format(task.name, task.url, type(exception).__name__, exception, html))
+    self.logger.error('[{}] Url {} parse failed ({}: {})'
+                      '\nTraceback: {}'
+                      '\nDebug HTML: {}'.format(task.name, task.url, type(exception).__name__, exception, traceback.format_exc(), html))
 
 
 def common_init(self, try_limit):
