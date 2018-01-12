@@ -3,7 +3,7 @@ import re
 from grab.spider import Spider, Task
 
 from d_parser.helpers.cookies_init import cookies_init
-from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init
+from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init, check_errors
 from d_parser.helpers.re_set import Ree
 from helpers.config import Config
 from helpers.url_generator import UrlGenerator
@@ -21,6 +21,7 @@ class DSpider(Spider):
     def __init__(self, thread_number, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
         DSpider._check_body_errors = check_body_errors
+        DSpider._check_errors = check_errors
         DSpider._process_error = process_error
         DSpider._common_init = common_init
         self._common_init(try_limit)
@@ -63,17 +64,7 @@ class DSpider(Spider):
         self.logger.info('[{}] Start: {}'.format(task.name, task.url))
 
         if self._check_body_errors(grab, task):
-            if task.task_try_count < self.err_limit:
-                self.logger.error('[{}] Restart task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-                yield Task(
-                    'parse_items',
-                    url=task.url,
-                    priority=95,
-                    task_try_count=task.task_try_count + 1,
-                    raw=True)
-            else:
-                self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-            return
+            yield self._check_errors(task)
 
         try:
             # parse table rows
@@ -123,18 +114,7 @@ class DSpider(Spider):
         self.logger.info('[{}] Start: {}'.format(task.name, task.url))
 
         if self._check_body_errors(grab, task):
-            if task.task_try_count < self.err_limit:
-                self.logger.error('[{}] Restart task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-                yield Task(
-                    'parse_item',
-                    url=task.url,
-                    priority=105,
-                    task_try_count=task.task_try_count + 1,
-                    raw=True)
-            else:
-                self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-
-            return
+            yield self._check_errors(task)
 
         try:
             # common block with info

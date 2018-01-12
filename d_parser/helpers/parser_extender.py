@@ -1,9 +1,12 @@
 # parser_extender.py
 # Common parser functions (like check custom errors, count stat, etc)
-# r1
+# r2
 
 import logging
 import traceback
+
+from grab.spider import Task
+from grab.spider.task import BaseTask
 
 from helpers.config import Config
 from helpers.url_generator import UrlGenerator
@@ -13,6 +16,21 @@ logger = logging.getLogger('ddd_site_parse')
 
 def get_body(grab):
     return grab.doc.unicode_body()
+
+
+def check_errors(self, task):
+    if task.task_try_count < self.err_limit:
+        self.logger.error('[{}] Restart task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
+        return Task(
+            task.name,
+            url=task.url,
+            priority=task.priority + 5,
+            task_try_count=task.task_try_count + 1,
+            raw=True)
+    else:
+        self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
+
+    return BaseTask()
 
 
 def check_body_errors(self, grab, task):
