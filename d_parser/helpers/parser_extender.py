@@ -35,10 +35,10 @@ def check_errors(self, task):
             priority=task.priority + 5,
             task_try_count=task.task_try_count + 1,
             raw=True)
-    else:
-        self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
 
-    return BaseTask()
+    err = '[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count)
+    self.logger.error(err)
+    raise Exception(err)
 
 
 def check_body_errors(self, grab, task):

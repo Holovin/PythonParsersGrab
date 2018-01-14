@@ -37,13 +37,11 @@ class DSpider(Spider):
 
     # prepare
     def task_initial(self, grab, task):
-        self.logger.info('[{}] Initial url: {}'.format(task.name, task.url))
-
-        if self.check_body_errors(grab, task):
-            self.logger.fatal('[{}] Err task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-            return
-
         try:
+            if self.check_body_errors(grab, task):
+                self.logger.fatal('[{}] Err task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
+                return
+
             # make link
             url = UrlGenerator.get_page_params(self.domain, 'catalog', {'curPos': 0})
 
@@ -58,10 +56,10 @@ class DSpider(Spider):
 
     # parse page
     def task_parse_page(self, grab, task):
-        if self.check_body_errors(grab, task):
-            yield self.check_errors(task)
-
         try:
+            if self.check_body_errors(grab, task):
+                yield self.check_errors(task)
+
             # parse table rows
             table = grab.doc.select('//table[@class="table search_table list"]//tr')
 
@@ -102,10 +100,10 @@ class DSpider(Spider):
 
     # parse single item
     def task_parse_item(self, grab, task):
-        if self.check_body_errors(grab, task):
-            yield self.check_errors(task)
-
         try:
+            if self.check_body_errors(grab, task):
+                yield self.check_errors(task)
+
             # common block with info
             product_info = grab.doc.select('//div[@class="product_info"]')
 
