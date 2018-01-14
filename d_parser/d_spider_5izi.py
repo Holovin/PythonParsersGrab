@@ -3,7 +3,7 @@ import re
 from grab.spider import Spider, Task
 
 from d_parser.helpers.cookies_init import cookies_init
-from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init, check_errors
+from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init, check_errors, extend_class, process_finally
 from d_parser.helpers.re_set import Ree
 from helpers.config import Config
 from helpers.url_generator import UrlGenerator
@@ -20,13 +20,16 @@ class DSpider(Spider):
 
     def __init__(self, thread_number, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
-        DSpider._check_body_errors = check_body_errors
-        DSpider._check_errors = check_errors
-        DSpider._process_error = process_error
-        DSpider._common_init = common_init
-        self._common_init(try_limit)
 
-        Ree.init()
+        extend_class(DSpider, [
+            check_body_errors,
+            check_errors,
+            process_error,
+            process_finally,
+            common_init
+        ])
+
+        self.common_init(try_limit)
 
     def create_grab_instance(self, **kwargs):
         grab = super(DSpider, self).create_grab_instance(**kwargs)
@@ -36,35 +39,27 @@ class DSpider(Spider):
     def task_initial(self, grab, task):
         self.logger.info('[{}] Initial url: {}'.format(task.name, task.url))
 
-        if self._check_body_errors(grab, task):
+        if self.check_body_errors(grab, task):
             self.logger.fatal('[{}] Err task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
             return
 
         try:
             # make link
-            url = UrlGenerator.get_page_params(self.domain, 'catalog', {
-                'curPos': 0
-            })
+            url = UrlGenerator.get_page_params(self.domain, 'catalog', {'curPos': 0})
 
             # prepare page loop parsing
-            yield Task(
-                'parse_page',
-                url=url,
-                priority=90,
-                raw=True)
+            yield Task('parse_page', url=url, priority=90, raw=True)
 
         except Exception as e:
-            self._process_error(grab, task, e)
+            self.process_error(grab, task, e)
 
         finally:
-            self.logger.info('[{}] Finish: {}'.format(task.name, task.url))
+            self.process_finally(task)
 
     # parse page
     def task_parse_page(self, grab, task):
-        self.logger.info('[{}] Start: {}'.format(task.name, task.url))
-
-        if self._check_body_errors(grab, task):
-            yield self._check_errors(task)
+        if self.check_body_errors(grab, task):
+            yield self.check_errors(task)
 
         try:
             # parse table rows
@@ -97,24 +92,18 @@ class DSpider(Spider):
                 if link[:1] == '/':
                     link = UrlGenerator.get_page_params(self.domain, link, {})
 
-                yield Task(
-                    'parse_page',
-                    url=link,
-                    priority=90,
-                    raw=True)
+                yield Task('parse_page', url=link, priority=90, raw=True)
 
         except Exception as e:
-            self._process_error(grab, task, e)
+            self.process_error(grab, task, e)
 
         finally:
-            self.logger.info('[{}] Finish: {}'.format(task.name, task.url))
+            self.process_finally(task)
 
     # parse single item
     def task_parse_item(self, grab, task):
-        self.logger.info('[{}] Start: {}'.format(task.name, task.url))
-
-        if self._check_body_errors(grab, task):
-            yield self._check_errors(task)
+        if self.check_body_errors(grab, task):
+            yield self.check_errors(task)
 
         try:
             # common block with info
@@ -177,7 +166,7 @@ class DSpider(Spider):
             })
 
         except Exception as e:
-            self._process_error(grab, task, e)
+            self.process_error(grab, task, e)
 
         finally:
-            self.logger.info('[{}] Finish: {}'.format(task.name, task.url))
+            self.process_finally(task)

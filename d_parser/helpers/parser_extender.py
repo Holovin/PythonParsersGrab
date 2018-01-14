@@ -4,14 +4,22 @@
 
 import logging
 import traceback
+import types
 
 from grab.spider import Task
 from grab.spider.task import BaseTask
 
+from d_parser.helpers.re_set import Ree
 from helpers.config import Config
 from helpers.url_generator import UrlGenerator
 
 logger = logging.getLogger('ddd_site_parse')
+
+
+def extend_class(self, new_methods):
+    for method in new_methods:
+        if type(method) is types.FunctionType and not getattr(self, method.__name__, None):
+            setattr(self, method.__name__, method)
 
 
 def get_body(grab):
@@ -34,6 +42,8 @@ def check_errors(self, task):
 
 
 def check_body_errors(self, grab, task):
+    self.logger.info('[{}] Start: {}'.format(task.name, task.url))
+
     try:
         self.status_counter[str(grab.doc.code)] += 1
 
@@ -42,7 +52,7 @@ def check_body_errors(self, grab, task):
 
     if grab.doc.body == '' or grab.doc.code != 200:
         err = '[{}] Code is {}, url is {}, body is {}'.format(task.name, grab.doc.code, task.url, grab.doc.body)
-        logger.error(err)
+        self.logger.error(err)
         return True
 
     return False
@@ -65,7 +75,13 @@ def process_error(self, grab, task, exception):
                       '\nDebug HTML: {}'.format(task.name, task.url, type(exception).__name__, exception, traceback.format_exc(), html))
 
 
+def process_finally(self, task):
+    self.logger.info('[{}] Finish: {}'.format(task.name, task.url))
+
+
 def common_init(self, try_limit):
+    Ree.init()
+
     self.result = []
     self.logger = logger
     self.status_counter = {}
