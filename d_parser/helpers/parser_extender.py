@@ -1,14 +1,14 @@
 # parser_extender.py
 # Common parser functions (like check custom errors, count stat, etc)
-# r2
+# r3
 
 import logging
 import traceback
 import types
 
 from grab.spider import Task
-from grab.spider.task import BaseTask
 
+from d_parser.helpers.logger_overrider import Log
 from d_parser.helpers.re_set import Ree
 from helpers.config import Config
 from helpers.url_generator import UrlGenerator
@@ -28,7 +28,7 @@ def get_body(grab):
 
 def check_errors(self, task):
     if task.task_try_count < self.err_limit:
-        self.logger.error('[{}] Restart task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
+        self.log.error(task, 'Restart task, attempt {}'.format(task.task_try_count))
         return Task(
             task.name,
             url=task.url,
@@ -36,13 +36,13 @@ def check_errors(self, task):
             task_try_count=task.task_try_count + 1,
             raw=True)
 
-    err = '[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count)
-    self.logger.error(err)
+    err = 'Skip task, attempt {}'.format(task.task_try_count)
+    self.log.error(task, err)
     raise Exception(err)
 
 
 def check_body_errors(self, grab, task):
-    self.logger.info('[{}] Start: {}'.format(task.name, task.url))
+    self.log.info(task, 'Start'.format(task.url))
 
     try:
         self.status_counter[str(grab.doc.code)] += 1
@@ -52,7 +52,7 @@ def check_body_errors(self, grab, task):
 
     if grab.doc.body == '' or grab.doc.code != 200:
         err = '[{}] Code is {}, url is {}, body is {}'.format(task.name, grab.doc.code, task.url, grab.doc.body)
-        self.logger.error(err)
+        self.log.error(task, err)
         return True
 
     return False
@@ -70,22 +70,24 @@ def process_error(self, grab, task, exception):
     else:
         html = '(skipped by config)'
 
-    self.logger.error('[{}] Url {} parse failed ({}: {})'
-                      '\nTraceback: {}'
-                      '\nDebug HTML: {}'.format(task.name, task.url, type(exception).__name__, exception, traceback.format_exc(), html))
+    self.log.error(task, 'Parse failed ({}: {})\nTraceback: {}\nDebug HTML: {}'
+                   .format(type(exception).__name__, exception, traceback.format_exc(), html))
 
 
 def process_finally(self, task):
-    self.logger.info('[{}] Finish: {}'.format(task.name, task.url))
+    self.log.info(task, 'Finish')
 
 
 def common_init(self, try_limit):
     Ree.init()
 
     self.result = []
-    self.logger = logger
     self.status_counter = {}
     self.cookie_jar = {}
-    self.err_limit = try_limit
+
     self.domain = UrlGenerator.get_host_from_url(Config.get_seq('SITE_URL')[0])
+    self.err_limit = try_limit
+
+    self.log = Log(logger)
+    self.logger = logger
     self.logger.info('Init parser ok...')

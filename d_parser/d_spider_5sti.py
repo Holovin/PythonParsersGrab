@@ -39,7 +39,7 @@ class DSpider(Spider):
     def task_initial(self, grab, task):
         try:
             if self.check_body_errors(grab, task):
-                self.logger.fatal('[{}] Err task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
+                self.log.fatal(task, 'Err task, attempt {}'.format(task.task_try_count))
                 return
 
             exclude_links_labels = ['Оплата', 'Доставка', 'Гарантия', 'Акции', 'Рекомендации по подбору', 'Информация и реквизиты',
@@ -60,11 +60,7 @@ class DSpider(Spider):
                 if link[:1] == '/':
                     link = UrlGenerator.get_page_params(self.domain, link, {})
 
-                yield Task(
-                    'parse_page',
-                    url=link,
-                    priority=90,
-                    raw=True)
+                yield Task('parse_page', url=link, priority=90, raw=True)
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -88,11 +84,7 @@ class DSpider(Spider):
                 if link[:1] == '/':
                     link = UrlGenerator.get_page_params(self.domain, link, {})
 
-                yield Task(
-                    'parse_item',
-                    url=link,
-                    priority=100,
-                    raw=True)
+                yield Task('parse_item', url=link, priority=100, raw=True)
 
         except Exception as e:
             self._process_error(grab, task, e)
@@ -136,7 +128,7 @@ class DSpider(Spider):
 
             # check if positive and correct price
             if not product_price.isdigit():
-                self.logger.debug('[{}] Skip item, cuz wrong price {}'.format(task.name, product_price))
+                self.log.debug(task, 'Skip item, cuz wrong price {}'.format(product_price))
                 return
 
             # F = vendor code [const = skip for parsing]

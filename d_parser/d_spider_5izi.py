@@ -39,7 +39,7 @@ class DSpider(Spider):
     def task_initial(self, grab, task):
         try:
             if self.check_body_errors(grab, task):
-                self.logger.fatal('[{}] Err task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
+                self.log.fatal(task, 'Err task, attempt {}'.format(task.task_try_count))
                 return
 
             # make link
@@ -73,11 +73,7 @@ class DSpider(Spider):
                 if link[:1] == '/':
                     link = UrlGenerator.get_page_params(self.domain, link, {})
 
-                yield Task(
-                    'parse_item',
-                    url=link,
-                    priority=100,
-                    raw=True)
+                yield Task('parse_item', url=link, priority=100, raw=True)
 
             # parse "показать ещё" links
             more_links = grab.doc.select('.//a[starts-with(@href, "/catalog/?")]')
@@ -134,7 +130,7 @@ class DSpider(Spider):
 
             # check if correct price
             if not Ree.float.match(product_price):
-                self.logger.debug('[{}] Skip item, cuz wrong price {}'.format(task.name, product_price))
+                self.log.info(task, 'Skip item, cuz wrong price {}'.format(product_price))
                 return
 
             # F = vendor code                                                                                what's wrong with python xpath?
