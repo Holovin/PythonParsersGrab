@@ -1,6 +1,7 @@
 import re
 
 from grab.spider import Spider, Task
+from weblib.error import DataNotFound
 
 from d_parser.helpers.cookies_init import cookies_init
 from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init, check_errors, extend_class, process_finally
@@ -108,13 +109,11 @@ class DSpider(Spider):
 
             else:
                 # E = price (float)
-                product_price = product_info.select('.//div[@class="cupit"]/div[1]/span/following-sibling::text()[1]')
+                try:
+                    product_price = product_info.select('.//div[@class="cupit"]/div[1]/span/following-sibling::text()[1]').text().strip()
 
-                # except E
-                # if not product_price:
-                #     return
-
-                product_price = product_price.text().strip()
+                except DataNotFound:
+                    product_price = '[not found]'
 
                 # check if correct price
                 if not Ree.float.match(product_price):
