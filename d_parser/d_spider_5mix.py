@@ -109,11 +109,7 @@ class DSpider(Spider):
 
             else:
                 # E = price (float)
-                try:
-                    product_price = product_info.select('.//div[@class="cupit"]/div[1]/span/following-sibling::text()[1]').text().strip()
-
-                except DataNotFound:
-                    product_price = '[not found]'
+                product_price = product_info.select('.//div[@class="cupit"]/div[1]/span/following-sibling::text()[1]').text(default='[not found]').strip()
 
                 # check if correct price
                 if not Ree.float.match(product_price):
