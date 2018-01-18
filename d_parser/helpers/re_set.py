@@ -10,12 +10,14 @@ class Ree:
     float = None
     number = None
     page_number = None
+    extract_int = None
 
     @staticmethod
     def init():
         Ree.is_float()
         Ree.is_number()
         Ree.is_page_number('')
+        Ree.extract_int_compile()
 
     @staticmethod
     def is_page_number(page_param):
@@ -28,3 +30,7 @@ class Ree:
     @staticmethod
     def is_number():
         Ree.number = re.compile('^\d+$')
+
+    @staticmethod
+    def extract_int_compile():
+        Ree.extract_int = re.compile('^.+(?P<int>\d+).+$')

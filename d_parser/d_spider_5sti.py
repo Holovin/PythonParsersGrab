@@ -3,9 +3,7 @@ import re
 from grab.spider import Spider, Task
 
 from d_parser.helpers.cookies_init import cookies_init
-from d_parser.helpers.el_parser import get_pagination
-from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init
-from d_parser.helpers.re_set import Ree
+from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init, extend_class, check_errors, process_finally
 from helpers.config import Config
 from helpers.url_generator import UrlGenerator
 
@@ -22,12 +20,16 @@ class DSpider(Spider):
 
     def __init__(self, thread_number, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
-        DSpider._check_body_errors = check_body_errors
-        DSpider._process_error = process_error
-        DSpider._common_init = common_init
-        self._common_init(try_limit)
 
-        Ree.init()
+        extend_class(DSpider, [
+            check_body_errors,
+            check_errors,
+            process_error,
+            process_finally,
+            common_init
+        ])
+
+        self.common_init(try_limit)
 
     def create_grab_instance(self, **kwargs):
         grab = super(DSpider, self).create_grab_instance(**kwargs)
@@ -35,16 +37,14 @@ class DSpider(Spider):
 
     # Fetch all categories from main page
     def task_initial(self, grab, task):
-        self.logger.info('[{}] Initial url: {}'.format(task.name, task.url))
-
-        exclude_links_labels = ['Оплата', 'Доставка', 'Гарантия', 'Акции', 'Рекомендации по подбору', 'Информация и реквизиты',
-                                'Новости', 'Контакты', 'Сервис-центр']
-
-        if self._check_body_errors(grab, task):
-            self.logger.fatal('[{}] Err task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-            return
-
         try:
+            if self.check_body_errors(grab, task):
+                self.log.fatal(task, 'Err task, attempt {}'.format(task.task_try_count))
+                return
+
+            exclude_links_labels = ['Оплата', 'Доставка', 'Гарантия', 'Акции', 'Рекомендации по подбору', 'Информация и реквизиты',
+                                    'Новости', 'Контакты', 'Сервис-центр']
+
             # take all links from horizontal nav, exclude anchors (#) and external links
             category_list = grab.doc.select('//div[@id="navbar"]//a[starts-with(@href, "/")]')
 
@@ -60,37 +60,20 @@ class DSpider(Spider):
                 if link[:1] == '/':
                     link = UrlGenerator.get_page_params(self.domain, link, {})
 
-                yield Task(
-                    'parse_page',
-                    url=link,
-                    priority=90,
-                    raw=True)
+                yield Task('parse_page', url=link, priority=90, raw=True)
 
         except Exception as e:
-            self._process_error(grab, task, e)
+            self.process_error(grab, task, e)
 
         finally:
-            self.logger.info('[{}] Finish: {}'.format(task.name, task.url))
+            self.process_finally(task)
 
     # parse page
     def task_parse_page(self, grab, task):
-        self.logger.info('[{}] Start: {}'.format(task.name, task.url))
-
-        if self._check_body_errors(grab, task):
-            if task.task_try_count < self.err_limit:
-                self.logger.error('[{}] Restart task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-                yield Task(
-                    'parse_items',
-                    url=task.url,
-                    priority=95,
-                    task_try_count=task.task_try_count + 1,
-                    raw=True)
-            else:
-                self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-
-            return
-
         try:
+            if self.check_body_errors(grab, task):
+                yield self.check_errors(task)
+
             # parse items
             items_list = grab.doc.select('//div[@class="prod-list-cell"]//a[.!=""]')
 
@@ -101,37 +84,20 @@ class DSpider(Spider):
                 if link[:1] == '/':
                     link = UrlGenerator.get_page_params(self.domain, link, {})
 
-                yield Task(
-                    'parse_item',
-                    url=link,
-                    priority=100,
-                    raw=True)
+                yield Task('parse_item', url=link, priority=100, raw=True)
 
         except Exception as e:
             self._process_error(grab, task, e)
 
         finally:
-            self.logger.info('[{}] Finish: {}'.format(task.name, task.url))
+            self.process_finally(task)
 
     # parse single item
     def task_parse_item(self, grab, task):
-        self.logger.info('[{}] Start: {}'.format(task.name, task.url))
-
-        if self._check_body_errors(grab, task):
-            if task.task_try_count < self.err_limit:
-                self.logger.error('[{}] Restart task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-                yield Task(
-                    'parse_item',
-                    url=task.url,
-                    priority=105,
-                    task_try_count=task.task_try_count + 1,
-                    raw=True)
-            else:
-                self.logger.error('[{}] Skip task with url {}, attempt {}'.format(task.name, task.url, task.task_try_count))
-
-            return
-
         try:
+            if self.check_body_errors(grab, task):
+                yield self.check_errors(task)
+
             # parse fields
             # A = name
             product_name = grab.doc.select('//h1').text()
@@ -162,7 +128,7 @@ class DSpider(Spider):
 
             # check if positive and correct price
             if not product_price.isdigit():
-                self.logger.debug('[{}] Skip item, cuz wrong price {}'.format(task.name, product_price))
+                self.log.debug(task, 'Skip item, cuz wrong price {}'.format(product_price))
                 return
 
             # F = vendor code [const = skip for parsing]
@@ -191,7 +157,7 @@ class DSpider(Spider):
             })
 
         except Exception as e:
-            self._process_error(grab, task, e)
+            self.process_error(grab, task, e)
 
         finally:
-            self.logger.info('[{}] Finish: {}'.format(task.name, task.url))
+            self.process_finally(task)
