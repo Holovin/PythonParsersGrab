@@ -1,8 +1,5 @@
-import re
-
 from grab.spider import Spider, Task
 from lxml import html
-from weblib.error import DataNotFound
 
 from d_parser.helpers.cookies_init import cookies_init
 from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init, check_errors, extend_class, process_finally
@@ -18,8 +15,6 @@ VERSION = 26
 # Warn: noinspection PyUnusedLocal
 class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
-    re_product_unit = re.compile('^.+\d\s(?P<unit>.+)$')
-    re_description = re.compile('<h4>.+</h4>', re.MULTILINE | re.DOTALL)
 
     def __init__(self, thread_number, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
@@ -142,7 +137,7 @@ class DSpider(Spider):
                 if row != '':
                     product_description_part += row
 
-            # I = description [const empty]
+            # I = description
             product_description = 'Характеристики:\n{}\nОписание:\n{}'.format(
                 product_info.select('.//div[@class="product-description table"]').text(),
                 product_description_part

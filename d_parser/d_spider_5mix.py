@@ -1,7 +1,6 @@
 import re
 
 from grab.spider import Spider, Task
-from weblib.error import DataNotFound
 
 from d_parser.helpers.cookies_init import cookies_init
 from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init, check_errors, extend_class, process_finally
@@ -153,7 +152,7 @@ class DSpider(Spider):
             product_photo_url_raw = product_info.select('./div[@class="photo"]//img').attr('src')
             product_photo_url = UrlGenerator.get_page_params(self.domain, product_photo_url_raw, {})
 
-            # I = description [const empty]
+            # I = description
             product_description = grab.doc.select('//div[@class="tabs"]').text()\
                 .replace('вконтакт', '')\
                 .replace('однокласники', '')\
