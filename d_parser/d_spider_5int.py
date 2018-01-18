@@ -50,7 +50,6 @@ class DSpider(Spider):
             for link in links:
                 url = UrlGenerator.get_page_params(self.domain, link.attr('href'), {'onpage': 99999})
                 yield Task('parse_page', url=url, priority=90, raw=True)
-                return
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -72,7 +71,6 @@ class DSpider(Spider):
                 link = UrlGenerator.get_page_params(self.domain, link, {})
 
                 yield Task('parse_item', url=link, priority=100, raw=True)
-                return
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -132,7 +130,7 @@ class DSpider(Spider):
 
             # pre I
             product_description_part_raw = product_info.select('.//div[@class="product-description description"]/following-sibling::node()[2]')\
-                .text()\
+                .text(default='')\
                 .replace('$(".description").html(\'', '')\
                 .replace('\');', '')
 
