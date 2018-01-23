@@ -16,7 +16,7 @@ class DataSaver(ABC):
 
         self.output_dir = params.get('output_dir')
         self.output_file_name = params.get('output_file', time.strftime('%d_%m_%Y'))
-        self.encoding = params.get('encoding', 'utf8')
+        self.encoding = params.get('encoding', 'utf-8')
         self.ext = ''
 
     def set_data(self, data) -> None:

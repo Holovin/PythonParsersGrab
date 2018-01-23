@@ -95,8 +95,7 @@ def main():
 
     # output dirs init
     saver = init_saver_class({
-        'output_dir': Config.get('APP_OUTPUT_DIR'),
-        'encoding': Config.get('APP_OUTPUT_ENC')
+        'output_dir': Config.get('APP_OUTPUT_DIR')
     })
 
     # output category for detect save mode
