@@ -1,7 +1,6 @@
 # main.py
 # Parser runner, based on grab framework
-# r26
-CURRENT_VERSION = 26
+# r27
 
 import logging
 import operator
@@ -13,8 +12,12 @@ from datetime import datetime
 
 from dev.logger import logger_setup
 from helpers.config import Config
-from helpers.data_saver import DataSaver
+from helpers.fix_dir import fix_dirs
 from helpers.module_loader import ModuleLoader
+from helpers.save.data_saver_csv import DataSaverCSV
+
+
+CURRENT_VERSION = 27
 
 
 def init_loggers():
@@ -64,20 +67,34 @@ def load_config():
     return False
 
 
+def init_saver_class(params):
+    saver_name = Config.get('APP_SAVER_CLASS')
+
+    if saver_name == 'csv':
+        return DataSaverCSV(params)
+
+    raise Exception('Saver class not found')
+
+
 def main():
     # load config
     if not load_config():
         print('Empty config?')
         exit(2)
 
-    # output dirs init
-    saver = DataSaver(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'), Config.get('APP_OUTPUT_ENC'))
-    saver.fix_dirs()
+    # create dirs if not exist
+    fix_dirs(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'))
 
     # log
     logger = init_loggers()
     logger.info(' --- ')
     logger.info('Start app...')
+
+    # output dirs init
+    saver = init_saver_class({
+        'output_dir': Config.get('APP_OUTPUT_DIR'),
+        'encoding': Config.get('APP_OUTPUT_ENC')
+    })
 
     # output category for detect save mode
     # need for use after parse, but read before for prevent useless parse (if will errors)
@@ -111,11 +128,11 @@ def main():
 
         # single file
         if not cat:
-            saver.save(Config.get_seq('APP_SAVE_FIELDS'))
+            saver.save(Config.get_seq('APP_SAVE_FIELDS'), {})
 
         # separate categories
         else:
-            saver.save_by_category(cat, Config.get_seq('APP_SAVE_FIELDS'))
+            saver.save_by_category(cat, Config.get_seq('APP_SAVE_FIELDS'), {})
 
         logger.info('End with stats: \n{}'.format(process_stats(bot.status_counter)))
 
