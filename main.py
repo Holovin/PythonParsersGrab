@@ -15,7 +15,7 @@ from helpers.config import Config
 from helpers.fix_dir import fix_dirs
 from helpers.module_loader import ModuleLoader
 from helpers.save.data_saver_csv import DataSaverCSV
-
+from helpers.save.data_saver_json import DataSaverJSON
 
 CURRENT_VERSION = 27
 
@@ -72,6 +72,9 @@ def init_saver_class(params):
 
     if saver_name == 'csv':
         return DataSaverCSV(params)
+
+    elif saver_name == 'json':
+        return DataSaverJSON(params)
 
     raise Exception('Saver class not found')
 

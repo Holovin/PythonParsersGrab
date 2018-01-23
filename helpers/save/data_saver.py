@@ -29,17 +29,48 @@ class DataSaver(ABC):
         additional = ''
 
         for arg in args:
-            additional += '_{}'.format(arg)
+            additional += f'_{arg}'
 
         return '{}{}.{}'.format(name, additional, self.ext)
 
-    @abstractmethod
-    def save(self, data_fields: [], params: {}):
-        pass
+    def save(self, data_fields: [], params: {}) -> None:
+        self._save(self.data, data_fields, self.get_file_name(''), {})
+
+    def save_by_category(self, data_fields: [], category_field: str, params: {}) -> None:
+        result = {}
+
+        # sep data
+        for row in self.data:
+            # create cat array
+            if row[category_field] not in result.keys():
+                result[row[category_field]] = []
+
+            result[row[category_field]].append(row)
+
+        # save data
+        for cat in result.keys():
+            self._save(result[cat], data_fields, self.get_file_name('', cat), {})
 
     @abstractmethod
-    def save_by_category(self, data_fields: [], category_field: str, params: {}):
+    def _save(self, data: [], data_fields: [], out_file: str, params: {}) -> None:
         pass
+
+    # noinspection PyMethodMayBeStatic
+    def _check_data_fields(self, data: [], data_fields: []) -> []:
+        if len(data) > 0:
+            # check valid field records or not - take data[0] because all items have same fields
+            data_fields_checked = [f for f in data_fields if f in data[0]]
+
+            if len(data_fields) != len(data_fields_checked):
+                logger.warning(f'Undefined properties removed! \n'
+                               f'\tOld: {data_fields}\n'
+                               f'\tvs\n'
+                               f'\tNew: {data_fields_checked}')
+
+            return data_fields_checked
+
+        logger.fatal('Empty data source')
+        raise Exception('Empty data source')
 
     @staticmethod
     def fix_row_encoding(row: {}, encoding: str, mode: str='replace'):
