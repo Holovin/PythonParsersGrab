@@ -159,7 +159,7 @@ class DSpider(Spider):
                 'measure': product_unit,
                 'price': product_price,
                 'sku': product_vendor_code,
-                'vendor': product_vendor,
+                'manufacture': product_vendor,
                 'photo': product_photo_url,
                 'properties': product_description
             })
