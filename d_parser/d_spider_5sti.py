@@ -8,7 +8,7 @@ from helpers.config import Config
 from helpers.url_generator import UrlGenerator
 
 
-VERSION = 26
+VERSION = 27
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -39,7 +39,7 @@ class DSpider(Spider):
     def task_initial(self, grab, task):
         try:
             if self.check_body_errors(grab, task):
-                self.log.fatal(task, 'Err task, attempt {}'.format(task.task_try_count))
+                self.log.fatal(task, f'Err task, attempt {task.task_try_count}')
                 return
 
             exclude_links_labels = ['Оплата', 'Доставка', 'Гарантия', 'Акции', 'Рекомендации по подбору', 'Информация и реквизиты',
@@ -104,20 +104,18 @@ class DSpider(Spider):
 
             # B = count
             # C = status
-            # if B = [0...100] => [0...100]
-            # if B > 100 => 100
             product_count_string = grab.doc.select('//span[@class="p-qty-wh"]').text()
 
             if product_count_string == 'Под заказ':
-                product_status = 'zakaz'
-                product_count = 'zapros'
+                product_status = '-1'
+                product_count = '-1'
 
             elif product_count_string == 'На складе: более 100':
-                product_status = '000000000'
+                product_status = '-1'
                 product_count = 100
 
             else:
-                product_status = '000000000'
+                product_status = '-1'
                 product_count = DSpider.re_product_count.match(product_count_string).groupdict()['count']
 
             # D = unit [const = value]
@@ -128,7 +126,7 @@ class DSpider(Spider):
 
             # check if positive and correct price
             if not product_price.isdigit():
-                self.log.debug(task, 'Skip item, cuz wrong price {}'.format(product_price))
+                self.log.debug(task, f'Skip item, cuz wrong price {product_price}')
                 return
 
             # F = vendor code [const = skip for parsing]
@@ -141,19 +139,29 @@ class DSpider(Spider):
             product_photo_url = UrlGenerator.get_page_params(self.domain, grab.doc.select('//img[@id="Image1"]').attr('src'), {})
 
             # I = description
-            product_description = grab.doc.select('//div[@class="col-md-14"]')[1].text()
+            product_description = {'ОБЛАСТЬ ПРИМЕНЕНИЯ': grab.doc.select('//div[@class="col-md-14"]/p').text(default=' ')}
+
+            table = grab.doc.select('//div[@class="col-md-14"]/table//tr')
+
+            for row in table:
+
+                key = row.select('./td[1]').text()
+                value = row.select('./td[2]').text()
+
+                if key:
+                    product_description[key] = value
 
             # save
             self.result.append({
                 'name': product_name,
-                'count': product_count,
-                'status': product_status,
-                'unit': product_unit,
+                'quantity': product_count,
+                'delivery': product_status,
+                'measure': product_unit,
                 'price': product_price,
-                'vendor_code': product_vendor_code,
+                'sku': product_vendor_code,
                 'vendor': product_vendor,
-                'photo_url': product_photo_url,
-                'description': product_description
+                'photo': product_photo_url,
+                'properties': product_description
             })
 
         except Exception as e:
