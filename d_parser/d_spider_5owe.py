@@ -7,7 +7,7 @@ from helpers.config import Config
 from helpers.url_generator import UrlGenerator
 
 
-VERSION = 26
+VERSION = 27
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -36,7 +36,7 @@ class DSpider(Spider):
     def task_initial(self, grab, task):
         try:
             if self.check_body_errors(grab, task):
-                self.log.fatal(task, 'Err task, attempt {}'.format(task.task_try_count))
+                self.log.fatal(task, f'Err task, attempt {task.task_try_count}')
 
             links = grab.doc.select('//div[@class="gsections"]//ul//a')
 
@@ -94,7 +94,7 @@ class DSpider(Spider):
             product_name = product_info.select('.//h1').text()
 
             # B = [const]
-            product_count = 'zapros'
+            product_count = '-1'
 
             # C = depends on B [in stock / pod zakaz]
             product_count_string = product_info\
@@ -102,13 +102,13 @@ class DSpider(Spider):
                 .text(default='[not found]').strip()
 
             if product_count_string == 'есть в наличии':
-                product_status = '000000000'
+                product_status = '0'
 
             elif product_count_string == 'под заказ':
-                product_status = 'zakaz'
+                product_status = '-1'
 
             else:
-                self.log.warning(task, 'Skip item, cuz wrong count {}'.format(product_count_string))
+                self.log.warning(task, f'Skip item, cuz wrong count {product_count_string}')
                 return
 
             # D = unit
@@ -118,19 +118,19 @@ class DSpider(Spider):
                 product_unit = 'ед.'
 
             # E = price
-            # if E = "запросить цену и наличие" => zapros
+            # if E = "запросить цену и наличие" => -1
             # else => float
             product_price = product_info.select('.//div[@class="priceblock"]//span[1]')\
                 .text(default='').strip().replace(' ', '')
 
             if product_price == 'Позапросу':
-                product_price = 'zapros'
+                product_price = '-1'
 
             else:
                 # E = price (float)
                 # check if correct price
                 if not Ree.float.match(product_price):
-                    self.log.warning(task, 'Skip item, cuz wrong price {}'.format(product_price))
+                    self.log.warning(task, f'Skip item, cuz wrong price {product_price}')
                     return
 
             # F = vendor code
@@ -153,23 +153,23 @@ class DSpider(Spider):
             # part 3 -- technical data
             product_description_technical = product_info.select('.//div[@id="slide2"]').text(default='')
 
-            product_description = '{}\n{}\n{}'.format(
-                product_description_table,
-                product_description_under_table,
-                product_description_technical,
-            )
+            # no newline in f-strings, python, really?
+            product_description = {
+                'Технические характеристики': '{}\n{}'.format(product_description_table, product_description_under_table),
+                'Подробное описание': product_description_technical,
+            }
 
             # save
             row = {
                 'name': product_name,
-                'count': product_count,
-                'status': product_status,
-                'unit': product_unit,
+                'quantity': product_count,
+                'delivery': product_status,
+                'measure': product_unit,
                 'price': product_price,
-                'vendor_code': product_vendor_code,
-                'vendor': product_vendor,
-                'photo_url': product_photo_url,
-                'description': product_description
+                'sku': product_vendor_code,
+                'manufacture': product_vendor,
+                'photo': product_photo_url,
+                'properties': product_description
             }
 
             self.log.info(task, row)
