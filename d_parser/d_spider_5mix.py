@@ -42,7 +42,7 @@ class DSpider(Spider):
                 self.log.fatal(task, f'Err task, attempt {task.task_try_count}')
                 return
 
-            links = grab.doc.select('//nav//a[re:match(@href, "/product_list/.+/.+/.+/")]')
+            links = grab.doc.select('//nav//a[not(.//img) and re:match(@href, "/product_list/.+")]')
 
             for link in links:
                 url = UrlGenerator.get_page_params(self.domain, link.attr('href'), {'count': 999999, 'name': 'asc'})
@@ -123,10 +123,10 @@ class DSpider(Spider):
                 if product_count_string == 'В наличии':
                     product_status = '0'
 
-                elif product_count_string == 'Под заказ, 1-3 дня' \
-                        or product_count_string == 'Под заказ, 2 дня'\
-                        or product_count_string == 'Под заказ, 3 дня'\
-                        or product_count_string == 'Под заказ, 1 день':
+                elif product_count_string == 'Под заказ, 1-3 дня':
+                        # or product_count_string == 'Под заказ, 2 дня'\
+                        # or product_count_string == 'Под заказ, 3 дня'\
+                        # or product_count_string == 'Под заказ, 1 день':
                     product_status = '3'
 
                 elif product_count_string == 'Под заказ, 12 дней':
