@@ -9,14 +9,14 @@ from helpers.config import Config
 from helpers.url_generator import UrlGenerator
 
 
-VERSION = 26
+VERSION = 27
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
 # Warn: noinspection PyUnusedLocal
 class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
-    re_product_unit = re.compile('^.+\d\s(?P<unit>.+)$')
+    re_product_status = re.compile('^.*?((\d+-)?(?P<int>\d+)).+')
 
     def __init__(self, thread_number, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
@@ -39,13 +39,13 @@ class DSpider(Spider):
     def task_initial(self, grab, task):
         try:
             if self.check_body_errors(grab, task):
-                self.log.fatal(task, 'Err task, attempt {}'.format(task.task_try_count))
+                self.log.fatal(task, f'Err task, attempt {task.task_try_count}')
                 return
 
-            links = grab.doc.select('//nav//a[re:match(@href, "/product_list/.+/.+/.+/")]')
+            links = grab.doc.select('//nav//a[not(.//img) and re:match(@href, "/product_list/.+")]')
 
             for link in links:
-                url = UrlGenerator.get_page_params(self.domain, link.attr('href'), {'count': 99999, 'name': 'asc'})
+                url = UrlGenerator.get_page_params(self.domain, link.attr('href'), {'count': 999999, 'name': 'asc'})
                 yield Task('parse_page', url=url, priority=90, raw=True)
 
         except Exception as e:
@@ -93,48 +93,51 @@ class DSpider(Spider):
 
             # B = [const]
             product_count_string = product_info.select('.//div[@class="availability"]').text()
-            product_count = 'zapros'
+            product_count = '-1'
 
             # E = price
-            # if E = "запросить цену и наличие" => zapros
+            # if E = "запросить цену и наличие" => -1
             # else => float
             product_price_raw = product_info.select('.//div[@class="cupit"]')
 
             if 'запросить' in product_price_raw.text() and product_count_string == 'В наличии':
                 # C = status
-                # if B = "в наличии" => 000000000
-                product_status = '000000000'
-                product_price = 'zapros'
+                # if B = "в наличии" => 0
+                product_status = '0'
+                product_price = '-1'
 
             else:
                 # E = price (float)
-                product_price = product_info.select('.//div[@class="cupit"]/div[1]/span/following-sibling::text()[1]').text(default='[not found]').strip()
+                product_price = product_info.select('.//div[@class="cupit"]/div[1]/span/following-sibling::text()[1]').text(default='[not found]')
 
                 # check if correct price
                 if not Ree.float.match(product_price):
-                    self.log.warning(task, 'Skip item, cuz wrong price {}'.format(product_price))
+                    self.log.warning(task, f'Skip item, cuz wrong price {product_price}')
                     return
 
                 # C = status
                 # if B = "в наличии" => 000000000
-                # if B = "Под заказ 1-3 дня" => zakaz3
-                # if B = "Под заказ 12 дней" => zakaz12
-                # if B = "Под заказ 9 дней" => zakaz9
+                # if B = "Под заказ [DIGIT1]-[DIGIT2] дня" => [DIGIT2]
+                # if B = "Под заказ [DIGIT2]          дня" => [DIGIT2]
                 if product_count_string == 'В наличии':
-                    product_status = '000000000'
-
-                elif product_count_string == 'Под заказ, 1-3 дня':
-                    product_status = 'zakaz3'
-
-                elif product_count_string == 'Под заказ, 12 дней':
-                    product_status = 'zakaz12'
-
-                elif product_count_string == 'Под заказ, 9 дней':
-                    product_status = 'zakaz9'
+                    product_status = '0'
 
                 else:
-                    self.log.warning(task, 'Skip because {} is unknown status'.format(product_count_string))
-                    return
+                    product_status_raw = self.re_product_status.match(product_count_string)
+
+                    if product_status_raw:
+                        product_status_raw = self.re_product_status.match(product_count_string).groupdict()['int']
+
+                        if Ree.number.match(product_status_raw):
+                            product_status = product_status_raw
+
+                            if int(product_status) > 20:
+                                self.log.warning(task, f'Skip because {product_status} is more 20')
+                                return
+
+                    else:
+                        self.log.warning(task, f'Skip because {product_count_string} is unknown status')
+                        return
 
             # D = unit
             product_unit = product_info.select('.//div[@class="unit"]').text()
@@ -153,23 +156,30 @@ class DSpider(Spider):
             product_photo_url = UrlGenerator.get_page_params(self.domain, product_photo_url_raw, {})
 
             # I = description
-            product_description = grab.doc.select('//div[@class="tabs"]').text()\
-                .replace('вконтакт', '')\
-                .replace('однокласники', '')\
-                .replace('twitter', '')\
-                .replace('facebook', '')\
+            product_description_raw = grab.doc.select('//div[@class="tabs"]/div/div')
+
+            product_description = {'Описание': product_description_raw.select('./div[2]/p').text()}
+
+            table = product_description_raw.select('./div[1]//tr')
+
+            for row in table:
+                key = row.select('./td[1]').text().strip(':')
+                value = row.select('./td[2]').text()
+
+                if key:
+                    product_description[key] = value
 
             # save
             row = {
                 'name': product_name,
-                'count': product_count,
-                'status': product_status,
-                'unit': product_unit,
+                'quantity': product_count,
+                'delivery': product_status,
+                'measure': product_unit,
                 'price': product_price,
-                'vendor_code': product_vendor_code,
-                'vendor': product_vendor,
-                'photo_url': product_photo_url,
-                'description': product_description
+                'sku': product_vendor_code,
+                'manufacture': product_vendor,
+                'photo': product_photo_url,
+                'properties': product_description
             }
 
             self.log.info(task, row)

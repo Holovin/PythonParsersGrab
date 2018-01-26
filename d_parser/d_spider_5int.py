@@ -8,7 +8,7 @@ from helpers.config import Config
 from helpers.url_generator import UrlGenerator
 
 
-VERSION = 26
+VERSION = 27
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -37,7 +37,7 @@ class DSpider(Spider):
     def task_initial(self, grab, task):
         try:
             if self.check_body_errors(grab, task):
-                self.log.fatal(task, 'Err task, attempt {}'.format(task.task_try_count))
+                self.log.fatal(task, f'Err task, attempt {task.task_try_count}')
                 return
 
             links = grab.doc.select('//div[@id="main-subitems"]//a')
@@ -89,9 +89,9 @@ class DSpider(Spider):
             # B = [const]
             # C = [const]
             # D = [const]
-            product_count_string = product_info.select('.//div[@class="product-data-storehouse"]').text(default='[not found]').strip()
-            product_count = 'zapros'
-            product_status = '000000000'
+            product_count_string = product_info.select('.//div[@class="product-data-storehouse"]').text(default='[not found]')
+            product_count = '-1'
+            product_status = '0'
             product_unit = 'ед.'
 
             if product_count_string != 'в наличии':
@@ -101,16 +101,16 @@ class DSpider(Spider):
             # E = price
             # if E = "запросить цену и наличие" => zapros
             # else => float
-            product_price = product_info.select('.//span[@itemprop="price"]').text().strip().replace(' ', '')
+            product_price = product_info.select('.//span[@itemprop="price"]').text().replace(' ', '')
 
-            if 'Уточняйте' in product_price:
-                product_price = 'zapros'
+            if product_price == 'Уточняйте':
+                product_price = '-1'
 
             else:
                 # E = price (float)
                 # check if correct price
                 if not Ree.float.match(product_price):
-                    self.log.warning(task, 'Skip item, cuz wrong price {}'.format(product_price))
+                    self.log.warning(task, f'Skip item, cuz wrong price {product_price}')
                     return
 
             # F = vendor code
@@ -129,31 +129,36 @@ class DSpider(Spider):
                 .replace('$(".description").html(\'', '')\
                 .replace('\');', '')
 
+            # I = description
             # this part insert pure html with js, so we need clear all html tags and &-symbols
-            product_description_part_list = html.fromstring('<div>{}</div>'.format(product_description_part_raw)).xpath('string()')
+            product_description_part_list = html.fromstring(f'<div>{product_description_part_raw}</div>').xpath('string()')
             product_description_part = ''
 
             for row in product_description_part_list:
-                if row != '':
-                    product_description_part += row
+                product_description_part += row
 
-            # I = description
-            product_description = 'Характеристики:\n{}\nОписание:\n{}'.format(
-                product_info.select('.//div[@class="product-description table"]').text(),
-                product_description_part
-            )
+            product_description = {'Описание': product_description_part}
+
+            table = product_info.select('.//div[@class="product-description table"]/div')
+
+            for row in table:
+                key = row.select('./text()').text()
+                value = row.select('./span').text()
+
+                if key:
+                    product_description[key] = value
 
             # save
             row = {
                 'name': product_name,
-                'count': product_count,
-                'status': product_status,
-                'unit': product_unit,
+                'quantity': product_count,
+                'delivery': product_status,
+                'measure': product_unit,
                 'price': product_price,
-                'vendor_code': product_vendor_code,
-                'vendor': product_vendor,
-                'photo_url': product_photo_url,
-                'description': product_description
+                'sku': product_vendor_code,
+                'manufacture': product_vendor,
+                'photo': product_photo_url,
+                'properties': product_description
             }
 
             self.log.info(task, row)

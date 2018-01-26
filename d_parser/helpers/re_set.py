@@ -33,4 +33,4 @@ class Ree:
 
     @staticmethod
     def extract_int_compile():
-        Ree.extract_int = re.compile('^.+(?P<int>\d+).+$')
+        Ree.extract_int = re.compile('^.*?(?P<int>\d+).+$')

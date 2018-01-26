@@ -9,7 +9,7 @@ from helpers.config import Config
 from helpers.url_generator import UrlGenerator
 
 
-VERSION = 26
+VERSION = 27
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -107,22 +107,20 @@ class DSpider(Spider):
             # A = name
             product_name = product_info.select('./h2[1]').text()
 
-            # B = count
-            # C = status
-            # if B = [0...100] => [0...100]
-            # if B > 100 => 100
-            # D = unit [const if no stock, else parse]
+            # B = count (quantity)
+            # C = status (delivery)
+            # D = unit (measure) [const if no stock, else parse]
             product_count_string = product_info.select('./div[@class="info_element total"]/div[@class="color_green"]').text()
 
             if product_count_string == 'Нет в наличии':
-                product_count = 'zapros'
-                product_status = 'zakaz'
+                product_count = '-1'
+                product_status = '-1'
                 product_unit = 'ед.'
 
             else:
                 product_count = Ree.extract_int.match(product_count_string).groupdict()['int']
-                product_status = '000000000'
-                product_unit = DSpider.re_product_unit.match(product_count_string).groupdict()['unit']  # 'штук'  # TODO: parse?
+                product_status = '0'
+                product_unit = DSpider.re_product_unit.match(product_count_string).groupdict()['unit']
 
             # E = price
             product_price_raw = product_info.select('./div[@class="info_element total"]/div[@class="total_prise"]/span').text()
@@ -133,30 +131,30 @@ class DSpider(Spider):
                 self.log.info(task, 'Skip item, cuz wrong price {}'.format(product_price))
                 return
 
-            # F = vendor code                                                                                what's wrong with python xpath?
+            # F = vendor code (sku)                                                                         what's wrong with python xpath?
             product_vendor_code = product_info.select('./div[contains(@class, "info_elements_row")]/div[@class="info_element"][1]/node()[4]').text().strip()
 
-            # G = vendor
+            # G = vendor (manufacture)
             product_vendor = product_info.select('./div[contains(@class, "info_elements_row")]/div[@class="info_element"][3]/a').text().strip()
 
             # H = photo url
             product_photo_url_raw = grab.doc.select('//div[contains(@class, "product_slider")]/div[@class="img_holder"]/div[1]/img').attr('src')
             product_photo_url = UrlGenerator.get_page_params(self.domain, product_photo_url_raw, {})
 
-            # I = description [const empty]
+            # I = description (properties) [const empty]
             product_description = ' '
 
             # save
             self.result.append({
                 'name': product_name,
-                'count': product_count,
-                'status': product_status,
-                'unit': product_unit,
+                'quantity': product_count,
+                'delivery': product_status,
+                'measure': product_unit,
                 'price': product_price,
-                'vendor_code': product_vendor_code,
-                'vendor': product_vendor,
-                'photo_url': product_photo_url,
-                'description': product_description
+                'sku': product_vendor_code,
+                'manufacture': product_vendor,
+                'photo': product_photo_url,
+                'properties': product_description
             })
 
         except Exception as e:
