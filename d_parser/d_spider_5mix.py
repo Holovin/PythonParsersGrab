@@ -16,7 +16,7 @@ VERSION = 27
 # Warn: noinspection PyUnusedLocal
 class DSpider(Spider):
     initial_urls = Config.get_seq('SITE_URL')
-    re_product_unit = re.compile('^.+\d\s(?P<unit>.+)$')
+    re_product_status = re.compile('^.*?((\d+-)?(?P<int>\d+)).+')
 
     def __init__(self, thread_number, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
@@ -117,27 +117,27 @@ class DSpider(Spider):
 
                 # C = status
                 # if B = "в наличии" => 000000000
-                # if B = "Под заказ 1-3 дня" => zakaz3
-                # if B = "Под заказ 12 дней" => zakaz12
-                # if B = "Под заказ 9 дней" => zakaz9
+                # if B = "Под заказ [DIGIT1]-[DIGIT2] дня" => [DIGIT2]
+                # if B = "Под заказ [DIGIT2]          дня" => [DIGIT2]
                 if product_count_string == 'В наличии':
                     product_status = '0'
 
-                elif product_count_string == 'Под заказ, 1-3 дня':
-                        # or product_count_string == 'Под заказ, 2 дня'\
-                        # or product_count_string == 'Под заказ, 3 дня'\
-                        # or product_count_string == 'Под заказ, 1 день':
-                    product_status = '3'
-
-                elif product_count_string == 'Под заказ, 12 дней':
-                    product_status = '12'
-
-                elif product_count_string == 'Под заказ, 9 дней':
-                    product_status = '9'
-
                 else:
-                    self.log.warning(task, f'Skip because {product_count_string} is unknown status')
-                    return
+                    product_status_raw = self.re_product_status.match(product_count_string)
+
+                    if product_status_raw:
+                        product_status_raw = self.re_product_status.match(product_count_string).groupdict()['int']
+
+                        if Ree.number.match(product_status_raw):
+                            product_status = product_status_raw
+
+                            if int(product_status) > 20:
+                                self.log.warning(task, f'Skip because {product_status} is more 20')
+                                return
+
+                    else:
+                        self.log.warning(task, f'Skip because {product_count_string} is unknown status')
+                        return
 
             # D = unit
             product_unit = product_info.select('.//div[@class="unit"]').text()
