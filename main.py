@@ -100,7 +100,7 @@ def main():
 
     # output category for detect save mode
     # need for use after parse, but read before for prevent useless parse (if will errors)
-    cat = Config.get('APP_OUTPUT_CAT')
+    cat = Config.get('APP_OUTPUT_CAT', '')
 
     # parser loader
     loader = ModuleLoader('d_parser.{}'.format(Config.get('APP_PARSER')))
