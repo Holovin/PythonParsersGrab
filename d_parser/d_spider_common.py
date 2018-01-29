@@ -5,6 +5,7 @@ from grab.spider import Spider, Task
 
 from d_parser.helpers.cookies_init import cookies_init
 from d_parser.helpers.logger_overrider import Log
+from d_parser.helpers.re_set import Ree
 from d_parser.helpers.stat_counter import StatCounter
 from helpers.config import Config
 from helpers.url_generator import UrlGenerator
@@ -18,10 +19,14 @@ class DSpiderCommon(Spider):
     def __init__(self, thread_number, try_limit=0):
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
 
+        Ree.init()
+
         self.result = []
         self.cookie_jar = {}
 
-        self.stat = StatCounter()
+        self.info = StatCounter()
+        self.info.add_task(StatCounter.TASK_FACTORY)
+
         self.domain = UrlGenerator.get_host_from_url(Config.get_seq('SITE_URL')[0])
         self.err_limit = try_limit
 
@@ -36,9 +41,9 @@ class DSpiderCommon(Spider):
     # EXTEND
     def do_task(self, name, url, priority, task_try_count=0, last=False, raw=True):
         if last:
-            self.stat.add_task()
+            self.info.add_task()
         else:
-            self.stat.add_task(StatCounter.TASK_FACTORY)
+            self.info.add_task(StatCounter.TASK_FACTORY)
 
         return Task(name, url=url, priority=priority, task_try_count=task_try_count, raw=raw)
 
@@ -47,7 +52,7 @@ class DSpiderCommon(Spider):
 
     def check_body_errors(self, grab, task):
         self.log.info(task, 'Start'.format(task.url))
-        self.stat.add(grab.doc.code)
+        self.info.add(grab.doc.code)
 
         if grab.doc.body == '' or grab.doc.code != 200:
             err = f'[{task.name}] Code is {grab.doc.code}, url is {task.url}, body is {grab.doc.body}'
@@ -66,7 +71,7 @@ class DSpiderCommon(Spider):
         raise Exception(err)
 
     def process_error(self, grab, task, exception):
-        self.stat.add(type(exception).__name__)
+        self.info.add(type(exception).__name__)
 
         if Config.get('APP_LOG_HTML_ERR', '') == 'True':
             html = self.get_body(grab)
@@ -79,8 +84,11 @@ class DSpiderCommon(Spider):
 
     def process_finally(self, task, last=False):
         if last:
-            self.stat.done_task()
+            self.info.done_task()
         else:
-            self.stat.done_task(StatCounter.TASK_FACTORY)
+            self.info.done_task(StatCounter.TASK_FACTORY)
 
-        self.log.info(task, f'Finish [{self.tasks} tasks in queue]')
+        self.log.info(task, f'[{self.info.get_tasks()}, {self.info.get_factory_tasks()}] Finish...')
+
+    def get_stats(self):
+        return self.info.process_stats()
