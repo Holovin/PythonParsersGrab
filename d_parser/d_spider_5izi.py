@@ -40,6 +40,7 @@ class DSpider(DSpiderCommon):
         try:
             if self.check_body_errors(grab, task):
                 yield self.check_errors(task)
+                return
 
             # parse table rows
             table = grab.doc.select('//table[@class="table search_table list"]//tr')
@@ -80,6 +81,7 @@ class DSpider(DSpiderCommon):
         try:
             if self.check_body_errors(grab, task):
                 yield self.check_errors(task)
+                return
 
             # common block with info
             product_info = grab.doc.select('//div[@class="product_info"]')

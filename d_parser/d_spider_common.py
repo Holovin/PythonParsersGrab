@@ -55,7 +55,7 @@ class DSpiderCommon(Spider):
         self.info.add(grab.doc.code)
 
         if grab.doc.body == '' or grab.doc.code != 200:
-            err = f'[{task.name}] Code is {grab.doc.code}, url is {task.url}, body is {grab.doc.body}'
+            err = f'Code is {grab.doc.code}, url is {task.url}, body is {grab.doc.body}'
             self.log.error(task, err)
             return True
 
