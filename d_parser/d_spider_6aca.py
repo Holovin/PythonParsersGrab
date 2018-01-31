@@ -64,7 +64,7 @@ class DSpider(DSpiderCommon):
     def task_parse_item(self, grab, task):
         try:
             if self.check_body_errors(grab, task):
-                yield self.check_errors(task)
+                yield self.check_errors(task, last=True)
                 return
 
             # common block with info
