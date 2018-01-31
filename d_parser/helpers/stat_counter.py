@@ -5,6 +5,7 @@ from functools import reduce
 
 class StatCounter:
     TASK_TOTAL = 'tasks_total'
+    TASK_TOTAL_NO_DROP = 'task_total_no_drop'
     TASK_FACTORY = 'task_factory'
 
     def __init__(self):
@@ -23,6 +24,7 @@ class StatCounter:
             self.tasks[task_type] += 1
 
         self.tasks[StatCounter.TASK_TOTAL] += 1
+        self.tasks[StatCounter.TASK_TOTAL_NO_DROP] += 1
 
     def done_task(self, task_type: str = None) -> None:
         if task_type:
@@ -30,11 +32,8 @@ class StatCounter:
 
         self.tasks[StatCounter.TASK_TOTAL] -= 1
 
-    def get_tasks(self) -> dict:
-        return self.tasks[StatCounter.TASK_TOTAL]
-
-    def get_factory_tasks(self) -> dict:
-        return self.tasks[StatCounter.TASK_FACTORY]
+    def get_tasks(self, key) -> int:
+        return self.tasks[key]
 
     def process_stats(self) -> str:
         output = ''

@@ -61,10 +61,10 @@ class DSpiderCommon(Spider):
 
         return False
 
-    def check_errors(self, task):
+    def check_errors(self, task, last=False):
         if task.task_try_count < self.err_limit:
             self.log.error(task, f'Restart task, attempt {task.task_try_count}')
-            return self.do_task(task.name, task.url, task.priority + 5, task.task_try_count + 1)
+            return self.do_task(task.name, task.url, task.priority + 5, task.task_try_count + 1, last)
 
         err = f'Skip task, attempt {task.task_try_count}'
         self.log.error(task, err)
@@ -88,7 +88,10 @@ class DSpiderCommon(Spider):
         else:
             self.info.done_task(StatCounter.TASK_FACTORY)
 
-        self.log.info(task, f'[{self.info.get_tasks()}, {self.info.get_factory_tasks()}] Finish...')
+        self.log.info(task, f'[{self.info.get_tasks(StatCounter.TASK_TOTAL)}, '
+                            f'{self.info.get_tasks(StatCounter.TASK_FACTORY)}, '
+                            f'{self.info.get_tasks(StatCounter.TASK_TOTAL_NO_DROP)}] '
+                            f'Finish...')
 
     def get_stats(self):
         return self.info.process_stats()
