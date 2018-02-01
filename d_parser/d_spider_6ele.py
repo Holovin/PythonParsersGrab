@@ -16,7 +16,7 @@ class DSpider(DSpiderCommon):
     def task_initial(self, grab, task):
         try:
             if self.check_body_errors(grab, task):
-                self.log.fatal(task, f'Err task, attempt {task.task_try_count}')
+                yield self.check_errors(task)
                 return
 
             # catalog
