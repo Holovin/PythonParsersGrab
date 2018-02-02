@@ -11,7 +11,7 @@ VERSION = 28
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
 # Warn: noinspection PyUnusedLocal
 class DSpider(DSpiderCommon):
-    re_unit = re.compile('\d(?P<unit>.+)')
+    re_unit = re.compile('\d+(?P<unit>.+)')
 
     def __init__(self, thread_number, try_limit=0):
         super().__init__(thread_number, try_limit)
@@ -108,10 +108,10 @@ class DSpider(DSpiderCommon):
                 return
 
             # D = unit (measure) [const if no stock, else parse]
-            product_unit_raw = DSpider.re_unit.match(product_info.select('.//div[@class="popup-in"]/div[3]/p[2]').text(''))
+            product_unit_raw = DSpider.re_unit.search(product_info.select('.//div[@class="popup-in"]/div[3]/p[2]').text(''))
 
             if product_unit_raw:
-                product_unit = product_unit_raw.groupdict()['unit']
+                product_unit = product_unit_raw.groupdict()['unit'].strip()
 
             else:
                 product_unit = 'ед.'
