@@ -1,34 +1,20 @@
-import re
-
-from grab.spider import Spider, Task
-
+from d_parser.d_spider_common import DSpiderCommon
 from d_parser.helpers.cookies_init import cookies_init
-from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init, extend_class, check_errors, process_finally
 from d_parser.helpers.re_set import Ree
 from helpers.config import Config
 from helpers.url_generator import UrlGenerator
 
 
-VERSION = 27
+VERSION = 28
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
 # Warn: noinspection PyUnusedLocal
-class DSpider(Spider):
+class DSpider(DSpiderCommon):
     initial_urls = Config.get_seq('SITE_URL')
 
     def __init__(self, thread_number, try_limit=0):
-        super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
-
-        extend_class(DSpider, [
-            check_body_errors,
-            check_errors,
-            process_error,
-            process_finally,
-            common_init
-        ])
-
-        self.common_init(try_limit)
+        super().__init__(thread_number, try_limit)
 
     def create_grab_instance(self, **kwargs):
         grab = super(DSpider, self).create_grab_instance(**kwargs)
@@ -45,7 +31,7 @@ class DSpider(Spider):
 
             for link in category_list:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {})
-                yield Task('parse_page', url=link, priority=90, raw=True)
+                yield self.do_task('parse_page', link, 90)
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -58,6 +44,7 @@ class DSpider(Spider):
         try:
             if self.check_body_errors(grab, task):
                 yield self.check_errors(task)
+                return
 
             # parse items links
             items_list = grab.doc.select('//table[@class="prod"]//tr[not(contains(@class, "white"))]')
@@ -78,7 +65,7 @@ class DSpider(Spider):
                 link = UrlGenerator.get_page_params(self.domain, link, {})
 
                 success_pages += 1
-                yield Task('parse_item', url=link, priority=100, raw=True)
+                yield self.do_task('parse_item', link, 100, last=True)
 
             # parse next page if current is ok
             if success_pages > 0:
@@ -86,7 +73,7 @@ class DSpider(Spider):
 
                 if next_page:
                     next_page = UrlGenerator.get_page_params(self.domain, next_page, {})
-                    yield Task('parse_page', url=next_page, priority=90, raw=True)
+                    yield self.do_task('parse_page', next_page, 90)
 
         except Exception as e:
             self._process_error(grab, task, e)
@@ -99,6 +86,7 @@ class DSpider(Spider):
         try:
             if self.check_body_errors(grab, task):
                 yield self.check_errors(task)
+                return
 
             product_info = grab.doc.select('//div[@id="product_right"]')
 
@@ -110,7 +98,12 @@ class DSpider(Spider):
             product_vendor = ' '
 
             # H = photo url
-            product_photo_url = UrlGenerator.get_page_params(self.domain, product_info.select('//img[@id="bigpic"]').attr('src', ''), {})
+            product_photo_url_raw = product_info.select('//img[@id="bigpic"]').attr('src', '')
+
+            if product_photo_url_raw:
+                product_photo_url = UrlGenerator.get_page_params(self.domain, product_photo_url_raw, {})
+            else:
+                product_photo_url = ''
 
             # I = description
             product_description = {'Описание': product_info.select('.//div[@id="idTab1"]').text(default=' ')}
@@ -124,9 +117,6 @@ class DSpider(Spider):
 
                 if key:
                     product_description[key] = value
-
-            if not product_photo_url:
-                self.log.warning(task, f'Skip photo url')
 
             # SPECIAL FIELDS
             # special section, because this site contains several products on page
@@ -169,8 +159,7 @@ class DSpider(Spider):
                     self.log.debug(task, f'Skip item, cuz wrong price {product_price}')
                     return
 
-                # save
-                self.result.append({
+                o = {
                     'name': product_name,
                     'quantity': product_count,
                     'delivery': product_status,
@@ -180,10 +169,15 @@ class DSpider(Spider):
                     'manufacture': product_vendor,
                     'photo': product_photo_url,
                     'properties': product_description
-                })
+                }
+
+                self.log.info(task, o)
+
+                # save
+                self.result.append(o)
 
         except Exception as e:
             self.process_error(grab, task, e)
 
         finally:
-            self.process_finally(task)
+            self.process_finally(task, last=True)
