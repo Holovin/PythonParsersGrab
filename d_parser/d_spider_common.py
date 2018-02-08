@@ -38,6 +38,17 @@ class DSpiderCommon(Spider):
         grab = super(DSpiderCommon, self).create_grab_instance(**kwargs)
         return cookies_init(self.cookie_jar, grab)
 
+    def task_initial(self, grab, task):
+        try:
+            pass
+            # override base task when we use task_generator instead initial
+
+        except Exception as e:
+            self.process_error(grab, task, e)
+
+        finally:
+            self.process_finally(task)
+
     # EXTEND
     def do_task(self, name, url, priority, task_try_count=0, last=False, raw=True):
         if last:
