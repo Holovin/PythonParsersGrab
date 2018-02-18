@@ -5,6 +5,7 @@
 import logging
 import os
 import sys
+import traceback
 
 from datetime import datetime
 
@@ -121,10 +122,11 @@ def main():
 
         logger.info(f'End with stats: \n{bot.get_stats()}')
 
-    except Exception as e:
-        logger.fatal('App core fatal error: {}'.format(e))
+    except Exception as exception:
+        logger.fatal(f'!!! App crashed !!! ({type(exception).__name__}: {exception})\nTraceback: {traceback.format_exc()}')
 
     logger.info(f'{datetime.now():%Y/%m/%d %H:%M:%S} :: End...')
+
 
 if __name__ == '__main__':
     main()
