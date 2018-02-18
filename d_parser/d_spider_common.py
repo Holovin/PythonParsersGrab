@@ -16,20 +16,43 @@ class DSpiderCommon(Spider):
     logger = logging.getLogger('ddd_site_parse')
 
     # GRAB
-    def __init__(self, thread_number, try_limit=0):
+    def __init__(self, thread_number: int, try_limit: int = 0) -> None:
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
 
+        # Re module init
         Ree.init()
 
+        # Work data
         self.result = []
         self.cookie_jar = {}
 
+        # Info
         self.info = StatCounter()
         self.info.add_task(StatCounter.TASK_FACTORY)
 
+        # Common vars
         self.domain = UrlGenerator.get_host_from_url(Config.get_seq('SITE_URL')[0])
         self.err_limit = try_limit
 
+        # Cache
+        cache_enabled = Config.get('APP_CACHE_ENABLED', '')
+        cache_db_host = Config.get('APP_CACHE_DB_HOST', '')
+
+        if cache_enabled and cache_db_host:
+            cache_db_name = Config.get('APP_CACHE_DB_NAME', 'pythonparsers')
+            cache_db_type = Config.get('APP_CACHE_DB_TYPE', 'mysql')
+            cache_db_port = int(Config.get('APP_CACHE_DB_PORT', '3306'))
+            cache_db_user = Config.get('APP_CACHE_DB_USER', 'root')
+            cache_db_pass = Config.get('APP_CACHE_DB_PASS', '')
+
+            self.setup_cache(backend=cache_db_type,
+                             database=cache_db_name,
+                             host=cache_db_host,
+                             port=cache_db_port,
+                             user=cache_db_user,
+                             password=cache_db_pass)
+
+        # Logger
         self.log = Log(DSpiderCommon.logger)
         self.logger = DSpiderCommon.logger
         self.logger.info('Init parser ok...')
