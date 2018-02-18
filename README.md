@@ -17,6 +17,12 @@ Common core for site parsing with python grab framework.
 - `APP_LOG_DEBUG_FILE` - log file name (only own code output)
 - `APP_LOG_GRAB_FILE` - log file name(only grab lib output)
 - `APP_LOG_HTML_ERR` - output html in log when occur any exception
+- `APP_CACHE_ENABLED` - enable page caching to your db (any value to enable)
+- `APP_CACHE_DB_HOST` - db host
+- `APP_CACHE_DB_PORT` - db post (default = 3306)
+- `APP_CACHE_DB_TYPE` - db type (support mysql, mongo and some others - look grab docs)
+- `APP_CACHE_DB_USER` - db user
+- `APP_CACHE_DB_PASS` - db password
 
 ## Base config {site}.env description/
 - `APP_PARSER` - name of file which store parser logic (Spider extended class)
