@@ -25,7 +25,7 @@ class Ree:
 
     @staticmethod
     def _is_float(price_sep=',.'):
-        Ree.float = re.compile('(?P<price>\d+([{}]\d+)?)'.format(price_sep))
+        Ree.float = re.compile('(?P<price>-?\d+([{}]\d+)?)'.format(price_sep))
 
     @staticmethod
     def _is_number():
