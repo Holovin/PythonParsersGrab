@@ -26,6 +26,8 @@ class DSpiderCommon(Spider):
         Ree.init()
 
         # Work data
+        self.single_task_mode = False
+        self.tasks_store = {}
         self.result = []
         self.cookie_jar = {}
 
@@ -55,6 +57,11 @@ class DSpiderCommon(Spider):
 
             self.logger.info('!!! CACHE MODE ENABLED !!!')
 
+        # Debug mode (only 1 iteration of each task)
+        if Config.get('APP_SINGLE_TASK', ''):
+            self.logger.info('!!! SINGLE MODE ENABLED !!!')
+            self.single_task_mode = True
+
         self.logger.info('Init parser ok...')
 
     def create_grab_instance(self, **kwargs):
@@ -82,12 +89,21 @@ class DSpiderCommon(Spider):
 
     # EXTEND
     def do_task(self, name, url, priority, task_try_count=0, last=False, raw=True):
+        if self.single_task_mode:
+            if self.tasks_store.get(name, ''):
+                return
+            else:
+                self.tasks_store[name] = 'done'
+
         if last:
             self.info.add_task()
         else:
             self.info.add_task(StatCounter.TASK_FACTORY)
 
         return Task(name, url=url, priority=priority, task_try_count=task_try_count, raw=raw)
+
+    def task_noop(self):
+        return
 
     def get_body(self, grab):
         return grab.doc.unicode_body()
