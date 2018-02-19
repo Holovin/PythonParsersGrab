@@ -34,26 +34,35 @@ class DataSaver(ABC):
         return '{}{}.{}'.format(name, additional, self.ext)
 
     def save(self, data_fields: [], params: {}) -> None:
-        self._save(self.data, data_fields, self.get_file_name(''), {})
+        if self._check_data():
+            self._save(self.data, data_fields, self.get_file_name(''), {})
 
     def save_by_category(self, data_fields: [], category_field: str, params: {}) -> None:
-        result = {}
+        if self._check_data():
+            result = {}
 
-        # sep data
-        for row in self.data:
-            # create cat array
-            if row[category_field] not in result.keys():
-                result[row[category_field]] = []
+            # sep data
+            for row in self.data:
+                # create cat array
+                if row[category_field] not in result.keys():
+                    result[row[category_field]] = []
 
-            result[row[category_field]].append(row)
+                result[row[category_field]].append(row)
 
-        # save data
-        for cat in result.keys():
-            self._save(result[cat], data_fields, self.get_file_name('', cat), {})
+            # save data
+            for cat in result.keys():
+                self._save(result[cat], data_fields, self.get_file_name('', cat), {})
 
     @abstractmethod
     def _save(self, data: [], data_fields: [], out_file: str, params: {}) -> None:
         pass
+
+    def _check_data(self) -> bool:
+        if not self.data:
+            logger.warning('Empty data source')
+            return False
+
+        return True
 
     # noinspection PyMethodMayBeStatic
     def _check_data_fields(self, data: [], data_fields: []) -> []:
@@ -68,9 +77,6 @@ class DataSaver(ABC):
                                f'\tNew: {data_fields_checked}')
 
             return data_fields_checked
-
-        logger.fatal('Empty data source')
-        raise Exception('Empty data source')
 
     @staticmethod
     def fix_row_encoding(row: {}, encoding: str, mode: str='replace'):
