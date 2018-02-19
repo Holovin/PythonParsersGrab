@@ -3,7 +3,6 @@ import traceback
 
 from grab.spider import Spider, Task
 
-from d_parser.helpers.cookies_init import cookies_init
 from d_parser.helpers.logger_overrider import Log
 from d_parser.helpers.re_set import Ree
 from d_parser.helpers.stat_counter import StatCounter
@@ -18,6 +17,10 @@ class DSpiderCommon(Spider):
     # GRAB
     def __init__(self, thread_number: int, try_limit: int = 0) -> None:
         super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
+
+        # Logger
+        self.log = Log(DSpiderCommon.logger)
+        self.logger = DSpiderCommon.logger
 
         # Re module init
         Ree.init()
@@ -45,21 +48,26 @@ class DSpiderCommon(Spider):
             cache_db_user = Config.get('APP_CACHE_DB_USER', 'root')
             cache_db_pass = Config.get('APP_CACHE_DB_PASS', '')
 
-            self.setup_cache(backend=cache_db_type,
-                             database=cache_db_name,
-                             host=cache_db_host,
-                             port=cache_db_port,
-                             user=cache_db_user,
-                             password=cache_db_pass)
+            if cache_db_user and cache_db_pass:
+                self.setup_cache(backend=cache_db_type, database=cache_db_name, host=cache_db_host, port=cache_db_port, user=cache_db_user, password=cache_db_pass)
+            else:
+                self.setup_cache(backend=cache_db_type, database=cache_db_name, host=cache_db_host, port=cache_db_port)
 
-        # Logger
-        self.log = Log(DSpiderCommon.logger)
-        self.logger = DSpiderCommon.logger
+            self.logger.info('!!! CACHE MODE ENABLED !!!')
+
         self.logger.info('Init parser ok...')
 
     def create_grab_instance(self, **kwargs):
         grab = super(DSpiderCommon, self).create_grab_instance(**kwargs)
-        return cookies_init(self.cookie_jar, grab)
+
+        # setup cookies
+        if self.cookie_jar:
+            grab.cookies.cookiejar = self.cookie_jar
+
+        cookies = Config.get_dict('APP_COOKIE_NAME', 'APP_COOKIE_VALUE', default_value={})
+        grab.setup(cookies=cookies)
+
+        return grab
 
     def task_initial(self, grab, task):
         try:
