@@ -101,8 +101,8 @@ def main():
     try:
         # bot parser
         logger.info('Start...')
-        threads_counter = int(Config.get('APP_THREAD_COUNT', 1))
-        bot = d_spider(thread_number=threads_counter, try_limit=int(Config.get('APP_TRY_LIMIT', 1)))
+        threads_counter = int(Config.get('APP_THREAD_COUNT', '1'))
+        bot = d_spider(thread_number=threads_counter, try_limit=int(Config.get('APP_TRY_LIMIT', '1')))
         bot.run()
 
         # post work
