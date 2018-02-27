@@ -109,23 +109,23 @@ class DSpiderCommon(Spider):
         return grab.doc.unicode_body()
 
     def check_body_errors(self, grab, task):
-        self.log.info(task, 'Start'.format(task.url))
+        self.log.info('Start', task)
         self.info.add(grab.doc.code)
 
         if grab.doc.body == '' or grab.doc.code != 200:
             err = f'Code is {grab.doc.code}, url is {task.url}, body is {grab.doc.body}'
-            self.log.error(task, err)
+            self.log.error(err, task)
             return True
 
         return False
 
     def check_errors(self, task, last=False):
         if task.task_try_count < self.err_limit:
-            self.log.error(task, f'Restart task, attempt {task.task_try_count}')
+            self.log.error(f'Restart task, attempt {task.task_try_count}', task)
             return self.do_task(task.name, task.url, task.priority + 5, task.task_try_count + 1, last)
 
         err = f'Skip task, attempt {task.task_try_count}'
-        self.log.error(task, err)
+        self.log.error(err, task)
         raise Exception(err)
 
     def process_error(self, grab, task, exception):
@@ -136,9 +136,9 @@ class DSpiderCommon(Spider):
         else:
             html = '(html source - skipped by config)'
 
-        self.log.error(task, f'Parse failed ({type(exception).__name__}: {exception})'
-                             f'\nTraceback: {traceback.format_exc()}'
-                             f'\nDebug HTML: {html}')
+        self.log.error(f'Parse failed ({type(exception).__name__}: {exception})'
+                       f'\nTraceback: {traceback.format_exc()}'
+                       f'\nDebug HTML: {html}', task)
 
     def process_finally(self, task, last=False):
         if last:
@@ -146,10 +146,10 @@ class DSpiderCommon(Spider):
         else:
             self.info.done_task(StatCounter.TASK_FACTORY)
 
-        self.log.info(task, f'[{self.info.get_tasks(StatCounter.TASK_TOTAL)}, '
-                            f'{self.info.get_tasks(StatCounter.TASK_FACTORY)}, '
-                            f'{self.info.get_tasks(StatCounter.TASK_TOTAL_NO_DROP)}] '
-                            f'Finish...')
+        self.log.info(f'[{self.info.get_tasks(StatCounter.TASK_TOTAL)}, '
+                      f'{self.info.get_tasks(StatCounter.TASK_FACTORY)}, '
+                      f'{self.info.get_tasks(StatCounter.TASK_TOTAL_NO_DROP)}] '
+                      f'Finish...', task)
 
     def get_stats(self):
         return self.info.process_stats()

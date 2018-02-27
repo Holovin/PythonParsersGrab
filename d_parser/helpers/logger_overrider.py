@@ -7,23 +7,27 @@ class Log:
     def __init__(self, logger):
         self.logger = logger
 
-    def critical(self, task: Task, message: str) -> None:
-        self.__write(logging.CRITICAL, task, message)
+    def critical(self, message: str, task: Task = None) -> None:
+        self.__write(logging.CRITICAL, message, task)
 
-    def fatal(self, task: Task, message: str) -> None:
-        self.__write(logging.FATAL, task, message)
+    def fatal(self, message: str, task: Task = None) -> None:
+        self.__write(logging.FATAL, message, task)
 
-    def error(self, task: Task, message: str) -> None:
-        self.__write(logging.ERROR, task, message)
+    def error(self, message: str, task: Task = None) -> None:
+        self.__write(logging.ERROR, message, task)
 
-    def warning(self, task: Task, message: str) -> None:
-        self.__write(logging.WARNING, task, message)
+    def warning(self, message: str, task: Task = None) -> None:
+        self.__write(logging.WARNING, message, task)
 
-    def info(self, task: Task, message: str) -> None:
-        self.__write(logging.INFO, task, message)
+    def info(self, message: str, task: Task = None) -> None:
+        self.__write(logging.INFO, message, task)
 
-    def debug(self, task: Task, message: str) -> None:
-        self.__write(logging.DEBUG, task, message)
+    def debug(self, message: str, task: Task = None) -> None:
+        self.__write(logging.DEBUG, message, task)
 
-    def __write(self, level, task: Task, message: str) -> None:
-        self.logger.log(level, '[{}] {} (url: {})'.format(task.name, message, task.url))
+    def __write(self, level, message: str, task: Task) -> None:
+        if task:
+            self.logger.log(level, f'[...] {message}')
+            return
+
+        self.logger.log(level, f'[{task.name}] {message} (url: {task.url})')
