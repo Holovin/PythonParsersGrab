@@ -1,6 +1,6 @@
 # config.py
 # Config loader, wrapper around load_dotenv lib functions
-# r1
+# r2
 
 import os
 from dotenv import load_dotenv
@@ -11,7 +11,7 @@ class Config:
     loaded = False
 
     @staticmethod
-    def load(config_dir, file_name):
+    def load(config_dir: str, file_name: str) -> None:
         base_file_path = os.path.join(config_dir, '.env')
         if not load_dotenv(base_file_path):
             raise Exception('Base config not defined, path: {}'.format(base_file_path))
@@ -23,7 +23,7 @@ class Config:
         Config.loaded = True
 
     @staticmethod
-    def get(key, default_value=None):
+    def get(key: str, default_value: str = None) -> str:
         value = os.environ.get(key)
 
         if value is None:
@@ -35,7 +35,7 @@ class Config:
         return value
 
     @staticmethod
-    def get_seq(key, sep='_'):
+    def get_seq(key: str, sep: str = '_') -> []:
         array = []
         counter = 1
 
@@ -54,7 +54,7 @@ class Config:
         return array
 
     @staticmethod
-    def get_dict(key_1, key_2, sep='_'):
+    def get_dict(key_1: str, key_2: str, sep: str = '_', default_value: dict = None) -> dict:
         out_dict = {}
         counter = 1
 
@@ -69,6 +69,9 @@ class Config:
             counter += 1
 
         if len(out_dict) == 0:
+            if default_value is not None:
+                return default_value
+
             raise ValueError('Empty dict values')
 
         return out_dict

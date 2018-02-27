@@ -1,39 +1,20 @@
 import re
 
-from grab.spider import Spider, Task
-
-from d_parser.helpers.cookies_init import cookies_init
-from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init, check_errors, extend_class, process_finally
+from d_parser.d_spider_common import DSpiderCommon
 from d_parser.helpers.re_set import Ree
-from helpers.config import Config
 from helpers.url_generator import UrlGenerator
 
 
-VERSION = 27
+VERSION = 28
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
 # Warn: noinspection PyUnusedLocal
-class DSpider(Spider):
-    initial_urls = Config.get_seq('SITE_URL')
+class DSpider(DSpiderCommon):
     re_product_unit = re.compile('^.+\d\s(?P<unit>.+)$')
 
     def __init__(self, thread_number, try_limit=0):
-        super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
-
-        extend_class(DSpider, [
-            check_body_errors,
-            check_errors,
-            process_error,
-            process_finally,
-            common_init
-        ])
-
-        self.common_init(try_limit)
-
-    def create_grab_instance(self, **kwargs):
-        grab = super(DSpider, self).create_grab_instance(**kwargs)
-        return cookies_init(self.cookie_jar, grab)
+        super().__init__(thread_number, try_limit)
 
     # prepare
     def task_initial(self, grab, task):
@@ -46,7 +27,7 @@ class DSpider(Spider):
             url = UrlGenerator.get_page_params(self.domain, 'catalog', {'curPos': 0})
 
             # prepare page loop parsing
-            yield Task('parse_page', url=url, priority=90, raw=True)
+            yield self.do_task('parse_page', url, 90)
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -59,6 +40,7 @@ class DSpider(Spider):
         try:
             if self.check_body_errors(grab, task):
                 yield self.check_errors(task)
+                return
 
             # parse table rows
             table = grab.doc.select('//table[@class="table search_table list"]//tr')
@@ -73,7 +55,7 @@ class DSpider(Spider):
                 if link[:1] == '/':
                     link = UrlGenerator.get_page_params(self.domain, link, {})
 
-                yield Task('parse_item', url=link, priority=100, raw=True)
+                yield self.do_task('parse_item', link, 100, last=True)
 
             # parse "показать ещё" links
             more_links = grab.doc.select('.//a[starts-with(@href, "/catalog/?")]')
@@ -86,7 +68,7 @@ class DSpider(Spider):
                 if link[:1] == '/':
                     link = UrlGenerator.get_page_params(self.domain, link, {})
 
-                yield Task('parse_page', url=link, priority=90, raw=True)
+                yield self.do_task('parse_page', link, 90)
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -99,6 +81,7 @@ class DSpider(Spider):
         try:
             if self.check_body_errors(grab, task):
                 yield self.check_errors(task)
+                return
 
             # common block with info
             product_info = grab.doc.select('//div[@class="product_info"]')
@@ -161,4 +144,4 @@ class DSpider(Spider):
             self.process_error(grab, task, e)
 
         finally:
-            self.process_finally(task)
+            self.process_finally(task, last=True)

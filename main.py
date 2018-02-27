@@ -1,13 +1,12 @@
 # main.py
 # Parser runner, based on grab framework
-# r27
+# r28
 
 import logging
-import operator
 import os
 import sys
+import traceback
 
-from functools import reduce
 from datetime import datetime
 
 from dev.logger import logger_setup
@@ -17,7 +16,7 @@ from helpers.module_loader import ModuleLoader
 from helpers.save.data_saver_csv import DataSaverCSV
 from helpers.save.data_saver_json import DataSaverJSON
 
-CURRENT_VERSION = 27
+CURRENT_VERSION = 28
 
 
 def init_loggers():
@@ -42,21 +41,6 @@ def init_loggers():
     logger.addHandler(logging.NullHandler())
 
     return logger
-
-
-def process_stats(stats):
-    output = ''
-
-    if not stats:
-        return output
-
-    _stats = sorted(stats.items(), key=operator.itemgetter(1), reverse=True)
-    _max = reduce(lambda a, b: a+b, stats.values())
-
-    for row in _stats:
-        output += 'Code: {}, count: {}% ({} / {})\n'.format(row[0], row[1]/_max * 100, row[1], _max)
-
-    return output
 
 
 def load_config():
@@ -100,14 +84,14 @@ def main():
 
     # output category for detect save mode
     # need for use after parse, but read before for prevent useless parse (if will errors)
-    cat = Config.get('APP_OUTPUT_CAT')
+    cat = Config.get('APP_OUTPUT_CAT', '')
 
     # parser loader
     loader = ModuleLoader('d_parser.{}'.format(Config.get('APP_PARSER')))
 
     # check version
     if not loader.check_version(CURRENT_VERSION):
-        logger.fatal('Incompatible parser version ({} > {}). Update source and run script again'.format(CURRENT_VERSION, loader.version))
+        logger.fatal(f'Incompatible parser version ({CURRENT_VERSION} > {loader.version}). Update source and run script again')
         exit(3)
 
     # load spider script
@@ -117,8 +101,8 @@ def main():
     try:
         # bot parser
         logger.info('Start...')
-        threads_counter = int(Config.get('APP_THREAD_COUNT', 1))
-        bot = d_spider(thread_number=threads_counter, try_limit=int(Config.get('APP_TRY_LIMIT', 1)))
+        threads_counter = int(Config.get('APP_THREAD_COUNT', '1'))
+        bot = d_spider(thread_number=threads_counter, try_limit=int(Config.get('APP_TRY_LIMIT', '1')))
         bot.run()
 
         # post work
@@ -136,12 +120,12 @@ def main():
         else:
             saver.save_by_category(cat, Config.get_seq('APP_SAVE_FIELDS'), {})
 
-        logger.info('End with stats: \n{}'.format(process_stats(bot.status_counter)))
+        logger.info(f'End with stats: \n{bot.get_stats()}')
 
-    except Exception as e:
-        logger.fatal('App core fatal error: {}'.format(e))
+    except Exception as exception:
+        logger.fatal(f'!!! App crashed !!! ({type(exception).__name__}: {exception})\nTraceback: {traceback.format_exc()}')
 
-    logger.info('{} :: End...'.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S')))
+    logger.info(f'{datetime.now():%Y/%m/%d %H:%M:%S} :: End...')
 
 
 if __name__ == '__main__':
