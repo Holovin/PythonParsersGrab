@@ -16,7 +16,7 @@ from helpers.module_loader import ModuleLoader
 from helpers.save.data_saver_csv import DataSaverCSV
 from helpers.save.data_saver_json import DataSaverJSON
 
-CURRENT_VERSION = 28
+CURRENT_VERSION = 29
 
 
 def init_loggers():
