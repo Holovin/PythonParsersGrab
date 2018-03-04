@@ -4,6 +4,7 @@ import traceback
 from grab import Grab
 from grab.spider import Spider, Task
 
+from d_parser.helpers.data_container import DataContainer
 from d_parser.helpers.logger_overrider import Log
 from d_parser.helpers.re_set import Ree
 from d_parser.helpers.stat_counter import StatCounter
@@ -29,8 +30,12 @@ class DSpiderCommon(Spider):
         # Work data
         self.single_task_mode = False
         self.tasks_store = {}
-        self.result = []
         self.cookie_jar = {}
+
+        if Config.get('APP_LOG_ITEMS', 'True'):
+            self.result = DataContainer(self.log)
+        else:
+            self.result = DataContainer()
 
         # Info
         self.info = StatCounter()

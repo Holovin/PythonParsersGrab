@@ -1,9 +1,10 @@
 from d_parser.d_spider_common import DSpiderCommon
 from d_parser.helpers.re_set import Ree
+from d_parser.helpers.stat_counter import StatCounter as SC
 from helpers.url_generator import UrlGenerator
 
 
-VERSION = 28
+VERSION = 29
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -43,7 +44,7 @@ class DSpider(DSpiderCommon):
 
             for link in items_list:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {})
-                yield self.do_task('parse_item', link, 100, last=True)
+                yield self.do_task('parse_item', link, 100)
 
             # parse next page link
             next_page = grab.doc.select('//div[@class="bx-pagination "]//li[@class="bx-pag-next"]/a').attr('href', '')
@@ -89,21 +90,21 @@ class DSpider(DSpiderCommon):
 
             # ???
             else:
-                self.log.warning(task, f'Unknown count status {product_count_string_full}, {product_count_string_empty} skip...')
+                self.log_warn(SC.MSG_UNKNOWN_COUNT, f'Unknown count status {product_count_string_full}, {product_count_string_empty} skip...')
                 return
 
             # D = unit (measure) [const!]
             product_unit = 'ед.'
 
-            # E = price
-            product_price_raw = product_info.select('.//div[@class="item_current_price"]').text('')
+            # E = price                                                                                   fix price '1 234.12 RUB'
+            product_price_raw = product_info.select('.//div[@class="item_current_price"]').text('').replace(' ', '')
             product_price_raw = Ree.extract_float.match(product_price_raw)
 
             if product_price_raw:
                 product_price = product_price_raw.groupdict()['float']
 
             else:
-                self.log.warning(task, f'Unknown price status {product_price_raw}, skip...')
+                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price status {product_price_raw}, skip...')
                 return
 
             if product_price == '0':
@@ -140,21 +141,7 @@ class DSpider(DSpiderCommon):
             product_description = {'Описание': product_info.select('.//div[@id="detail-text-content"]').text('')}
 
             # save
-            o = {
-                'name': product_name,
-                'quantity': product_count,
-                'delivery': product_status,
-                'measure': product_unit,
-                'price': product_price,
-                'sku': product_vendor_code,
-                'manufacture': product_vendor,
-                'photo': product_photo_url,
-                'properties': product_description
-            }
-
-            self.log.info(task, 'Add: {}'.format(o))
-
-            self.result.append({
+            self.result.add({
                 'name': product_name,
                 'quantity': product_count,
                 'delivery': product_status,
@@ -170,4 +157,4 @@ class DSpider(DSpiderCommon):
             self.process_error(grab, task, e)
 
         finally:
-            self.process_finally(task, last=True)
+            self.process_finally(task)

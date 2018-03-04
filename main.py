@@ -110,7 +110,7 @@ def main():
             bot.d_post_work()
 
         # pass data
-        saver.set_data(bot.result)
+        saver.set_data(bot.result.data)
 
         # single file
         if not cat:
