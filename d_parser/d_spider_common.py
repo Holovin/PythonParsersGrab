@@ -1,6 +1,7 @@
 import logging
 import traceback
 
+from grab import Grab
 from grab.spider import Spider, Task
 
 from d_parser.helpers.logger_overrider import Log
@@ -76,7 +77,7 @@ class DSpiderCommon(Spider):
 
         return grab
 
-    def task_initial(self, grab, task):
+    def task_initial(self, grab: Grab, task: Task) -> None:
         try:
             pass
             # override base task when we use task_generator instead initial
@@ -87,28 +88,25 @@ class DSpiderCommon(Spider):
         finally:
             self.process_finally(task)
 
-    # EXTEND
-    def do_task(self, name, url, priority, task_try_count=0, last=False, raw=True):
+    # Task helpers
+    def do_task(self, name: str, url: str, priority: int, task_try_count: int = 0, last: bool = False, raw: bool = True):
         if self.single_task_mode:
             if self.tasks_store.get(name, ''):
                 return
             else:
                 self.tasks_store[name] = 'done'
 
-        if last:
+        if last or DSpiderCommon.check_task_name_is_last(name):
             self.info.add_task()
         else:
             self.info.add_task(StatCounter.TASK_FACTORY)
 
         return Task(name, url=url, priority=priority, task_try_count=task_try_count, raw=raw)
 
-    def task_noop(self):
-        return
-
-    def get_body(self, grab):
+    def get_body(self, grab: Grab):
         return grab.doc.unicode_body()
 
-    def check_body_errors(self, grab, task):
+    def check_body_errors(self, grab: Grab, task: Task) -> bool:
         self.log.info('Start', task)
         self.info.add(grab.doc.code)
 
@@ -119,7 +117,7 @@ class DSpiderCommon(Spider):
 
         return False
 
-    def check_errors(self, task, last=False):
+    def check_errors(self, task: Task, last: bool = False) -> None:
         if task.task_try_count < self.err_limit:
             self.log.error(f'Restart task, attempt {task.task_try_count}', task)
             return self.do_task(task.name, task.url, task.priority + 5, task.task_try_count + 1, last)
@@ -128,7 +126,7 @@ class DSpiderCommon(Spider):
         self.log.error(err, task)
         raise Exception(err)
 
-    def process_error(self, grab, task, exception):
+    def process_error(self, grab: Grab, task: Task, exception) -> None:
         self.info.add(type(exception).__name__)
 
         if Config.get('APP_LOG_HTML_ERR', '') == 'True':
@@ -140,8 +138,8 @@ class DSpiderCommon(Spider):
                        f'\nTraceback: {traceback.format_exc()}'
                        f'\nDebug HTML: {html}', task)
 
-    def process_finally(self, task, last=False):
-        if last:
+    def process_finally(self, task: Task, last: bool = False) -> None:
+        if last or DSpiderCommon.check_task_name_is_last(task.name):
             self.info.done_task()
         else:
             self.info.done_task(StatCounter.TASK_FACTORY)
@@ -151,5 +149,17 @@ class DSpiderCommon(Spider):
                       f'{self.info.get_tasks(StatCounter.TASK_TOTAL_NO_DROP)}] '
                       f'Finish...', task)
 
-    def get_stats(self):
+    def get_stats(self) -> str:
         return self.info.process_stats()
+
+    # over-logger
+    def log_warn(self, message_type: str, message: str, task: Task = None) -> None:
+        self.log.warning(f'[{message_type}] {message}', task)
+        self.info.msg(message_type, message)
+
+    @staticmethod
+    def check_task_name_is_last(name: str) -> bool:
+        if name in ['parse_item']:
+            return True
+
+        return False
