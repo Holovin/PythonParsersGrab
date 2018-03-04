@@ -26,7 +26,7 @@ class Log:
         self.__write(logging.DEBUG, message, task)
 
     def __write(self, level, message: str, task: Task) -> None:
-        if task:
+        if not task:
             self.logger.log(level, f'[...] {message}')
             return
 
