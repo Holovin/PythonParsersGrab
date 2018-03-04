@@ -15,7 +15,7 @@ class StatCounter:
     def __init__(self):
         self.requests = defaultdict(int)
         self.tasks = defaultdict(int)
-        self.exception = defaultdict(int)
+        self.exceptions = defaultdict(int)
         self.messages = defaultdict(set)
 
     # add
@@ -23,7 +23,7 @@ class StatCounter:
         self.requests[str(code)] += 1
 
     def exc(self, exception_type: str) -> None:
-        self.exception[exception_type] += 1
+        self.exceptions[exception_type] += 1
 
     def msg(self, message_type: str, message: str) -> None:
         self.messages[message_type].add(message)
@@ -47,31 +47,37 @@ class StatCounter:
 
     # proc
     def process_stats(self) -> str:
-        output = ''
+        output = '\n---\t STATS \t---\n'
 
         # stats
         if len(self.requests) > 0:
             requests_sorted = sorted(self.requests.items(), key=operator.itemgetter(1), reverse=True)
             requests_total = reduce(lambda a, b: a+b, self.requests.values())
 
+            output += 'Codes:\n'
+
             for row in requests_sorted:
-                output += f'Code: {row[0]}, count: {row[1]/requests_total * 100}% ({row[1]} / {requests_total})\n'
+                output += f'\t[{row[0]}] Times: {row[1]/requests_total * 100}% ({row[1]} / {requests_total})\n'
 
         # exceptions
-        exceptions_sorted = sorted(self.exception.items(), key=operator.itemgetter(1), reverse=True)
+        if len(self.exceptions) > 0:
+            output += 'Exceptions:\n'
 
-        for row in exceptions_sorted:
-            output += f'Exception: {row[0]}, times {row[1]}\n'
+            exceptions_sorted = sorted(self.exceptions.items(), key=operator.itemgetter(1), reverse=True)
+
+            for row in exceptions_sorted:
+                output += f'\t[{row[0]}] Times: {row[1]}\n'
 
         # messages
-        messages_sorted = sorted(self.messages.items(), key=operator.itemgetter(1), reverse=True)
+        if len(self.messages) > 0:
+            output += 'Messages:\n'
 
-        for row in messages_sorted:
-            output += f'Messages: {row[0]}, variations: \n'
+            messages_sorted = sorted(self.messages.items(), key=operator.itemgetter(1), reverse=True)
 
-            for index, sub_row in enumerate(row[1], start=1):
-                output += f'\t[{index}] {sub_row}\n'
+            for row in messages_sorted:
+                output += f'\tType: {row[0]}, variations: \n'
 
-            output += '\n'
+                for index, sub_row in enumerate(row[1], start=1):
+                    output += f'\t\t[{index}] {sub_row}\n'
 
         return output
