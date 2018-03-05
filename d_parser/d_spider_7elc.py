@@ -1,9 +1,10 @@
 from d_parser.d_spider_common import DSpiderCommon
 from d_parser.helpers.re_set import Ree
+from d_parser.helpers.stat_counter import StatCounter as SC
 from helpers.url_generator import UrlGenerator
 
 
-VERSION = 28
+VERSION = 29
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -41,7 +42,7 @@ class DSpider(DSpiderCommon):
 
             catalog = grab.doc.select('//div[@class="listcatalog"]')
 
-            # gerenate new tasks
+            # generate new tasks
             links = catalog.select('.//div[@class="navigation"]/div[@class="nav"]//a')
             max_page = 1
 
@@ -76,7 +77,7 @@ class DSpider(DSpiderCommon):
 
             for link in items_list:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {})
-                yield self.do_task('parse_item', link, 100, last=True)
+                yield self.do_task('parse_item', link, 100)
 
         except Exception as e:
             self._process_error(grab, task, e)
@@ -107,13 +108,8 @@ class DSpider(DSpiderCommon):
                 product_status = '-1'
 
             else:
-                self.log.warning(task, f'Unknown count status {product_count_string} skip...')
+                self.log_warn(SC.MSG_UNKNOWN_COUNT, f'Unknown count status {product_count_string} skip...', task)
                 return
-
-            tin_tab = product_info.select('.//table[@class="tintab"]')
-
-            # D = unit (measure)
-            product_unit = tin_tab.select('.//tr[2]/td[2]').text('ед.')
 
             # E = price
             product_price = product_info.select('.//span[@class="price"]').text('').replace(' руб.', '')
@@ -122,14 +118,8 @@ class DSpider(DSpiderCommon):
                 product_price = '-1'
 
             if not product_price or not Ree.float.match(product_price):
-                self.log.warning(task, f'Unknown price status {product_price}, skip...')
+                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price status {product_price}, skip...', task)
                 return
-
-            # F = vendor code (sku)
-            product_vendor_code = tin_tab.select('.//tr[1]/td[2]').text('')
-
-            # G = vendor (manufacture)
-            product_vendor = tin_tab.select('.//tr[last()]/td[2]').text('')
 
             # H = photo url
             product_photo_url_raw = product_info.select('.//a[@itemprop="image"]').attr('href', '')
@@ -142,11 +132,30 @@ class DSpider(DSpiderCommon):
             # I = description (properties)
             product_description = {}
 
+            # default values
+            product_unit = 'ед.'
+            product_vendor_code = ''
+            product_vendor = ''
+
+            tin_tab = product_info.select('.//table[@class="tintab"]')
+
             # try parse full props
             for row in tin_tab.select('.//tr'):
-                key = row.select('./td[1]').text()
-                value = row.select('./td[2]').text()
+                key = row.select('./td[1]').text('')
+                value = row.select('./td[2]').text('')
 
+                # D = unit (measure)
+                if key == 'Единица измерения':
+                    product_unit = value
+
+                # F = vendor code (sku)
+                elif key == 'Артикул':
+                    product_vendor_code = value
+
+                elif key == 'Торговая марка / производитель':
+                    product_vendor = value
+
+                # default save
                 if key:
                     product_description[key] = value
 
@@ -162,7 +171,7 @@ class DSpider(DSpiderCommon):
                 product_description['Техническое описание'] = item_description
 
             # save
-            self.result.append({
+            self.result.add({
                 'name': product_name,
                 'quantity': product_count,
                 'delivery': product_status,
@@ -178,4 +187,4 @@ class DSpider(DSpiderCommon):
             self.process_error(grab, task, e)
 
         finally:
-            self.process_finally(task, last=True)
+            self.process_finally(task)

@@ -80,6 +80,6 @@ class StatCounter:
                 for index, sub_row in enumerate(row[1], start=1):
                     output += f'\t\t[{index}] {sub_row}\n'
 
-        output = '---\t --- \t---\n'
+        output += '---   ---   ---\n'
 
         return output

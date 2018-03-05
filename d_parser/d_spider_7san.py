@@ -90,7 +90,7 @@ class DSpider(DSpiderCommon):
 
             # ???
             else:
-                self.log_warn(SC.MSG_UNKNOWN_COUNT, f'Unknown count status {product_count_string_full}, {product_count_string_empty} skip...')
+                self.log_warn(SC.MSG_UNKNOWN_COUNT, f'Unknown count status {product_count_string_full}, {product_count_string_empty} skip...', task)
                 return
 
             # D = unit (measure) [const!]
@@ -104,7 +104,7 @@ class DSpider(DSpiderCommon):
                 product_price = product_price_raw.groupdict()['float']
 
             else:
-                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price status {product_price_raw}, skip...')
+                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price status {product_price_raw}, skip...', task)
                 return
 
             if product_price == '0':
