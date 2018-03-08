@@ -4,8 +4,10 @@
 
 import logging
 import time
+import os
 
 from abc import ABC, abstractmethod
+
 
 logger = logging.getLogger('ddd_site_parse')
 
@@ -31,7 +33,14 @@ class DataSaver(ABC):
         for arg in args:
             additional += f'_{arg}'
 
-        return '{}{}.{}'.format(name, additional, self.ext)
+        file_name = f'{name}{additional}.{self.ext}'
+        file_name_counter = 1
+
+        while os.path.isfile(os.path.join(self.output_dir, file_name)):
+            file_name = f'{name}{additional}_({file_name_counter}).{self.ext}'
+            file_name_counter += 1
+
+        return file_name
 
     def save(self, data_fields: [], params: {}) -> None:
         if self._check_data():
