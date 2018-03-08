@@ -1,6 +1,7 @@
 import operator
 from collections import defaultdict
 from functools import reduce
+from math import floor
 
 
 class StatCounter:
@@ -49,6 +50,10 @@ class StatCounter:
     # proc
     def process_stats(self) -> str:
         output = '\n---\t STATS \t---\n'
+
+        # check: if spider missed some check_body_* sections - this condition will be triggered
+        if self.requests['200'] < floor(self.tasks[StatCounter.TASK_TOTAL_NO_DROP] * 0.95):
+            output += '\n>>> WARN: Seems you missed [if check_body_errors] section in some tasks <<<\n'
 
         # stats
         if len(self.requests) > 0:

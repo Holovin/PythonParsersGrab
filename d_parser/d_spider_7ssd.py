@@ -74,6 +74,10 @@ class DSpider(DSpiderCommon):
     # parse single item
     def task_parse_item(self, grab, task):
         try:
+            if self.check_body_errors(grab, task):
+                yield self.check_errors(task)
+                return
+
             # common block with info
             product_info = grab.doc.select('//div[@class="main__content"]')
 
