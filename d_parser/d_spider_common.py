@@ -168,3 +168,7 @@ class DSpiderCommon(Spider):
             return True
 
         return False
+
+    @staticmethod
+    def get_next_task_priority(task, add: int = 10) -> int:
+        return task.priority + add
