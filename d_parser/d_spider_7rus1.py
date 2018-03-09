@@ -54,7 +54,7 @@ class DSpider(DSpiderCommon):
 
             if next_page:
                 next_page = UrlGenerator.get_page_params(self.domain, next_page, {})
-                yield self.do_task('parse_page', next_page, DSpider.get_next_task_priority(task, -10))
+                yield self.do_task('parse_page', next_page, DSpider.get_next_task_priority(task, 0))
 
         except Exception as e:
             self._process_error(grab, task, e)

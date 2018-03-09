@@ -54,7 +54,7 @@ class DSpider(DSpiderCommon):
 
             if next_page:
                 next_page = UrlGenerator.get_page_params(self.domain, next_page, {})
-                yield self.do_task('parse_page', next_page, DSpider.get_next_task_priority(task, -10))
+                yield self.do_task('parse_page', next_page, DSpider.get_next_task_priority(task, 0))
 
         except Exception as e:
             self._process_error(grab, task, e)
@@ -92,13 +92,13 @@ class DSpider(DSpiderCommon):
 
             for row in table:
                 # yes, "lass", not "class"
-                row_product_count = row.select('./td[@lass="s-quantity"]').text().strip()
+                row_product_count = row.select('./td[@lass="s-quantity"]').text().replace(',', '.').replace(' ', '')
 
-                if not row_product_count or not Ree.number.match(row_product_count):
-                    self.log_warn(SC.MSG_POSSIBLE_WARN, 'Empty row product, skip line...', task)
+                if not row_product_count or not Ree.float.match(row_product_count):
+                    self.log_warn(SC.MSG_POSSIBLE_WARN, f'Empty row product "{row_product_count}", skip line...', task)
                     continue
 
-                product_count += int(row_product_count)
+                product_count += float(row_product_count)
                 product_price = row.select('./td[@class="s-prise"]').text('')
 
             if product_count == 0:
@@ -110,7 +110,7 @@ class DSpider(DSpiderCommon):
             product_count = str(product_count)
 
             if not product_price or not Ree.float.match(product_price):
-                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price status {product_price}, skip...', task)
+                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price status "{product_price}", skip...', task)
                 return
 
             # H = photo url
