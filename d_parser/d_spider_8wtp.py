@@ -23,7 +23,8 @@ class DSpider(DSpiderCommon):
             items_list = grab.doc.select('//div[@class="b-megamenu-cats"]//a[@class="b-megamenu-cats__title"]')
 
             for link in items_list:
-                link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {'page_size': 120})
+                # DONT USE PAGE_SIZE PARAMS >>> CAUSE A LOT OF 404 ERRORS
+                link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {})
                 yield self.do_task('parse_page', link,  DSpider.get_next_task_priority(task))
 
         except Exception as e:
@@ -135,7 +136,7 @@ class DSpider(DSpiderCommon):
             # B = count (quantity) [const -1]
             product_count = '-1'
 
-            # очень сложная хуйня
+            # store counters for save status check
             store_counter = {
                 'Аква 100 (Одинцово)': 0,
                 'Магазин на Ленинском': 0,
@@ -159,7 +160,7 @@ class DSpider(DSpiderCommon):
 
                 # check store in list
                 if line not in store_counter:
-                    self.log_warn(SC.MSG_UNKNOWN_STORE, f'Store "{key}" not found in list!', task)
+                    self.log_warn(SC.MSG_UNKNOWN_STORE, f'Store "{line}" not found in list!', task)
                     continue
 
                 # mark store as processed
