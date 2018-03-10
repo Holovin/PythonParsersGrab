@@ -47,7 +47,7 @@ class DSpider(DSpiderCommon):
                 yield self.do_task('parse_page_items', link, DSpider.get_next_task_priority(task))
 
         except Exception as e:
-            self._process_error(grab, task, e)
+            self.process_error(grab, task, e)
 
         finally:
             self.process_finally(task)
@@ -66,7 +66,7 @@ class DSpider(DSpiderCommon):
                 yield self.do_task('parse_item', link, DSpider.get_next_task_priority(task))
 
         except Exception as e:
-            self._process_error(grab, task, e)
+            self.process_error(grab, task, e)
 
         finally:
             self.process_finally(task)

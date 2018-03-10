@@ -87,7 +87,7 @@ class DSpider(Spider):
                 yield Task('parse_item', url=link, priority=100, raw=True)
 
         except Exception as e:
-            self._process_error(grab, task, e)
+            self.process_error(grab, task, e)
 
         finally:
             self.process_finally(task)

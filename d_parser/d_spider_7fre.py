@@ -47,7 +47,7 @@ class DSpider(DSpiderCommon):
                 yield self.do_task('parse_item', link, 100)
 
         except Exception as e:
-            self._process_error(grab, task, e)
+            self.process_error(grab, task, e)
 
         finally:
             self.process_finally(task)
