@@ -118,7 +118,7 @@ def main():
 
         # separate categories
         else:
-            saver.save_by_category(cat, Config.get_seq('APP_SAVE_FIELDS'), {})
+            saver.save_by_category(Config.get_seq('APP_SAVE_FIELDS'), cat, {})
 
         logger.info(f'End with stats: \n{bot.get_stats()}')
 
