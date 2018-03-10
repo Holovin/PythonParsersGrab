@@ -53,7 +53,7 @@ class DataSaver(ABC):
             # sep data
             for row in self.data:
                 # create cat array
-                if row[category_field] not in result.keys():
+                if row[category_field] not in result:
                     result[row[category_field]] = []
 
                 result[row[category_field]].append(row)
