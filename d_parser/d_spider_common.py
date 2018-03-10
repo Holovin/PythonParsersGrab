@@ -133,7 +133,8 @@ class DSpiderCommon(Spider):
 
     def process_error(self, grab: Grab, task: Task, exception) -> None:
         self.info.add(type(exception).__name__)
-
+        self.log_warn(type(exception).__name__, exception, task)
+        
         if Config.get('APP_LOG_HTML_ERR', '') == 'True':
             html = self.get_body(grab)
         else:
