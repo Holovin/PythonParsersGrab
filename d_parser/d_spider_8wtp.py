@@ -48,7 +48,7 @@ class DSpider(DSpiderCommon):
                 yield self.do_task('parse_item', link, DSpider.get_next_task_priority(task))
 
             # parse next page link
-            next_page = grab.doc('//div[@class="b-paging"][1]/a[@class="b-paging__right" and text()="Следующая"]').attr('href', '')
+            next_page = grab.doc.select('//div[@class="b-paging"][1]/a[@class="b-paging__right" and text()="Следующая"]').attr('href', '')
 
             if next_page:
                 next_page = UrlGenerator.get_page_params(self.domain, next_page, {})
