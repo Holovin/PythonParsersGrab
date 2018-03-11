@@ -9,6 +9,7 @@ class StatCounter:
     MSG_UNKNOWN_PRICE = 'Unknown price'
     MSG_UNKNOWN_STATUS = 'Unknown status'
     MSG_UNKNOWN_STORE = 'Unknown store'
+    MSG_UNKNOWN_SKU = 'Unknown sku vendor code'
     MSG_POSSIBLE_WARN = 'Possible warning?'
 
     TASK_TOTAL = 'tasks_total'
