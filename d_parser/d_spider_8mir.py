@@ -34,8 +34,7 @@ class DSpider(DSpiderCommon):
         finally:
             self.process_finally(task)
 
-        # parse page items
-
+    # parse page items
     def task_parse_page(self, grab, task):
         try:
             if self.check_body_errors(grab, task):
