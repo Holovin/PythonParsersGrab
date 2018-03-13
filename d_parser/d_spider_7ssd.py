@@ -90,7 +90,13 @@ class DSpider(DSpiderCommon):
             product_count_string = product_info.select('.//div[@class="data-store"]')
             product_count = None
 
-            for city in ['data-msk', 'data-nsb', 'data-krd']:
+            store_count = {
+                'data-msk': 0,
+                'data-nsb': 0,
+                'data-krd': 0,
+            }
+
+            for city in store_count:
                 temp = product_count_string.attr(city, '').replace(' ', '')
 
                 if temp != '' or not Ree.float.match(temp):
@@ -100,6 +106,10 @@ class DSpider(DSpiderCommon):
                     temp = float(temp)
 
                     if temp >= 0:
+                        # fix
+                        if temp == 0:
+                            store_count[city] = -1
+
                         product_count += temp
                     else:
                         self.log_warn(SC.MSG_POSSIBLE_WARN, f'Unknown count status (>=0) {product_count_string.html()} skip...', task)
@@ -172,18 +182,20 @@ class DSpider(DSpiderCommon):
                     product_description[key] = value
 
             # save
-            self.result.add({
-                'name': product_name,
-                'quantity': product_count,
-                'delivery': product_status,
-                'measure': product_unit,
-                'price': product_price,
-                'sku': product_vendor_code,
-                'manufacture': product_vendor,
-                'photo': product_photo_url,
-                'id': product_id,
-                'properties': product_description,
-            })
+            for store_name, value in store_count.items():
+                self.result.add({
+                    'name': product_name,
+                    'quantity': value,
+                    'delivery': product_status,
+                    'measure': product_unit,
+                    'price': product_price,
+                    'sku': product_vendor_code,
+                    'manufacture': product_vendor,
+                    'photo': product_photo_url,
+                    'id': product_id,
+                    'properties': product_description,
+                    'place': store_name
+                })
 
         except Exception as e:
             self.process_error(grab, task, e)
