@@ -96,6 +96,7 @@ class DSpider(DSpiderCommon):
                 'data-krd': 0,
             }
 
+            # for each city
             for city in store_count:
                 temp = product_count_string.attr(city, '').replace(' ', '')
 
@@ -103,29 +104,19 @@ class DSpider(DSpiderCommon):
                     if product_count is None:
                         product_count = 0
 
+                    # convert
                     temp = float(temp)
 
+                    # check valid
                     if temp >= 0:
-                        # fix
+                        # replace
                         if temp == 0:
                             store_count[city] = -1
-
-                        product_count += temp
+                        else:
+                            store_count[city] = temp
                     else:
                         self.log_warn(SC.MSG_POSSIBLE_WARN, f'Unknown count status (>=0) {product_count_string.html()} skip...', task)
                         continue
-
-            if product_count is None:
-                self.log_warn(SC.MSG_UNKNOWN_COUNT, f'Unknown count status {product_count_string.html()} skip...', task)
-                return
-
-            elif product_count == 0:
-                product_count = '-1'
-                product_status = '-1'
-
-            else:
-                product_count = '-1'
-                product_status = '0'
 
             # D = unit (measure)
             product_unit = product_info.select('.//input[contains(@class, "product_count")]').attr('placeholder', 'ед.')
@@ -183,10 +174,14 @@ class DSpider(DSpiderCommon):
 
             # save
             for store_name, value in store_count.items():
+                # skip if still default value
+                if value == 0:
+                    continue
+
                 self.result.add({
                     'name': product_name,
                     'quantity': value,
-                    'delivery': product_status,
+                    'delivery': '0' if value != -1 else '-1',
                     'measure': product_unit,
                     'price': product_price,
                     'sku': product_vendor_code,

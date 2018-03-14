@@ -24,23 +24,26 @@ class DataSaver(ABC):
     def set_data(self, data) -> None:
         self.data = data
 
-    def get_file_name(self, name: str, *args: str) -> str:
+    def get_file_name(self, name: str, sub_dir: str = None, *args: str) -> str:
         if name == '':
             name = self.output_file_name
+
+        if sub_dir:
+            name = os.path.join(sub_dir, name)
 
         additional = ''
 
         for arg in args:
             additional += f'_{arg}'
 
-        file_name = f'{name}{additional}.{self.ext}'
-        file_name_counter = 1
+        filename = f'{name}{additional}.{self.ext}'
+        filename_counter = 1
 
-        while os.path.isfile(os.path.join(self.output_dir, file_name)):
-            file_name = f'{name}{additional}_({file_name_counter}).{self.ext}'
-            file_name_counter += 1
+        while os.path.isfile(os.path.join(self._get_save_dir(filename))):
+            filename = f'{name}{additional}_({filename_counter}).{self.ext}'
+            filename_counter += 1
 
-        return file_name
+        return filename
 
     def save(self, data_fields: [], params: {}) -> None:
         if self._check_data():
@@ -60,11 +63,20 @@ class DataSaver(ABC):
 
             # save data
             for cat in result.keys():
+                filename = self.get_file_name('', cat)
+                filename_dir = self._get_save_dir(os.path.dirname(filename))
+
+                if not os.path.exists(filename_dir):
+                    DataSaver.fix_dirs(filename_dir)
+
                 self._save(result[cat], data_fields, self.get_file_name('', cat), {})
 
     @abstractmethod
     def _save(self, data: [], data_fields: [], out_file: str, params: {}) -> None:
         pass
+
+    def _get_save_dir(self, filename):
+        return os.path.join(self.output_dir, filename)
 
     def _check_data(self) -> bool:
         if not self.data:
@@ -91,3 +103,13 @@ class DataSaver(ABC):
     def fix_row_encoding(row: {}, encoding: str, mode: str='replace'):
         for field in row.keys():
             row[field] = row[field].encode(encoding, mode).decode(encoding)
+
+    @staticmethod
+    def fix_dirs(base_dir, *add_dirs: str):
+        if not os.path.exists(base_dir):
+            os.makedirs(base_dir)
+
+        for add_dir in add_dirs:
+            new_dir = os.path.join(base_dir, add_dir)
+            if not os.path.exists(new_dir):
+                os.makedirs(new_dir)

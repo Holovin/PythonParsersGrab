@@ -11,8 +11,8 @@ from datetime import datetime
 
 from dev.logger import logger_setup
 from helpers.config import Config
-from helpers.fix_dir import fix_dirs
 from helpers.module_loader import ModuleLoader
+from helpers.save.data_saver import DataSaver
 from helpers.save.data_saver_csv import DataSaverCSV
 from helpers.save.data_saver_json import DataSaverJSON
 
@@ -70,7 +70,7 @@ def main():
         exit(2)
 
     # create dirs if not exist
-    fix_dirs(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'))
+    DataSaver.fix_dirs(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'))
 
     # log
     logger = init_loggers()
