@@ -97,15 +97,20 @@ class DSpider(DSpiderCommon):
                     elif 'Артикул' in line:
                         product_vendor_code = line.replace('Артикул: ', '').replace(' ', '')
 
-            # E = price || .//div[@itemprop="price"]/span
-            product_price = product_info.select('.//div[@class="good-info-price"]').text('').replace(' руб.', '')
+            # E = price
+            product_price_raw = product_info.select('.//div[@class="good-info-price"]').text('')
 
-            if product_price == 'Цена по запросу':
+            if product_price_raw == 'Цена по запросу':
                 product_price = '-1'
 
-            elif not product_price or not Ree.float.match(product_price):
-                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price status {product_price}, skip...', task)
-                return
+            else:
+                product_price_raw = product_info.select('.//div[@itemprop="price"]/span').text('').replace(' руб.', '')
+
+                if not product_price_raw or not Ree.float.match(product_price_raw):
+                    self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price status {product_price_raw}, skip...', task)
+                    return
+
+                product_price = product_price_raw
 
             # H = photo url
             product_photo_url_raw = grab.doc.select('//div[@class="b-good-images"]//img[@itemprop="logo"]').attr('src', '')
@@ -137,7 +142,7 @@ class DSpider(DSpiderCommon):
             product_count = '-1'
 
             # ID
-            id = Ree.extract_int.match(task.url).groupdict()['int']
+            product_id = Ree.extract_int.match(task.url).groupdict()['int']
 
             # store counters for save status check
             store_counter = {
@@ -189,7 +194,7 @@ class DSpider(DSpiderCommon):
                     'sku': product_vendor_code,
                     'manufacture': product_vendor,
                     'photo': product_photo_url,
-                    'id': id,
+                    'id': product_id,
                     'properties': product_description,
                     'place': product_place,
                 })
@@ -215,7 +220,7 @@ class DSpider(DSpiderCommon):
                     'sku': product_vendor_code,
                     'manufacture': product_vendor,
                     'photo': product_photo_url,
-                    'id': id,
+                    'id': product_id,
                     'properties': product_description,
                     'place': store_name,
                 })

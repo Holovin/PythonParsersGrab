@@ -103,7 +103,7 @@ class DSpider(DSpiderCommon):
                 return
 
             # E = price
-            product_price = product_info.select('.//ins[@class="price-rouble"]').text('')
+            product_price = product_info.select('.//ins[@class="price-rouble"]').text('').replace(' ', '')
 
             if product_price == 'по запросу':
                 product_price = '-1'

@@ -99,7 +99,7 @@ class DSpider(DSpiderCommon):
                     continue
 
                 product_count += float(row_product_count)
-                product_price = row.select('./td[@class="s-prise"]').text('')
+                product_price = row.select('./td[@class="s-prise"]').text('').replace(' ', '')
 
             if product_count == 0:
                 product_count = '-1'
