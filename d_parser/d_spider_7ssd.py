@@ -180,7 +180,7 @@ class DSpider(DSpiderCommon):
 
                 self.result.add({
                     'name': product_name,
-                    'quantity': value,
+                    'quantity': str(value),
                     'delivery': '0' if value != -1 else '-1',
                     'measure': product_unit,
                     'price': product_price,

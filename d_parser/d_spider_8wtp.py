@@ -136,6 +136,9 @@ class DSpider(DSpiderCommon):
             # B = count (quantity) [const -1]
             product_count = '-1'
 
+            # ID
+            id = Ree.extract_int.match(task.url).groupdict()['int']
+
             # store counters for save status check
             store_counter = {
                 'Аква 100 (Одинцово)': 0,
@@ -186,6 +189,7 @@ class DSpider(DSpiderCommon):
                     'sku': product_vendor_code,
                     'manufacture': product_vendor,
                     'photo': product_photo_url,
+                    'id': id,
                     'properties': product_description,
                     'place': product_place,
                 })
@@ -211,6 +215,7 @@ class DSpider(DSpiderCommon):
                     'sku': product_vendor_code,
                     'manufacture': product_vendor,
                     'photo': product_photo_url,
+                    'id': id,
                     'properties': product_description,
                     'place': store_name,
                 })
