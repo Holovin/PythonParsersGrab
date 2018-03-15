@@ -87,7 +87,7 @@ class DSpider(DSpiderCommon):
 
             # B = count (quantity)
             # C = status (delivery)
-            product_count_string = product_info.select('.//div[@class="data-store"]')
+            product_count_string = product_info.select('(.//div[@class="data-store"])[last()]')
             product_count = None
 
             store_count = {
