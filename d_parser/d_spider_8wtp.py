@@ -1,3 +1,5 @@
+import re
+
 from d_parser.d_spider_common import DSpiderCommon
 from d_parser.helpers.re_set import Ree
 from helpers.url_generator import UrlGenerator
@@ -10,6 +12,8 @@ VERSION = 29
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
 # Warn: noinspection PyUnusedLocal
 class DSpider(DSpiderCommon):
+    re_fix_pagination = re.compile('(.+\?)(action=.+)*(id=.+)*&(.+)')
+
     def __init__(self, thread_number, try_limit=0):
         super().__init__(thread_number, try_limit)
 
@@ -51,6 +55,10 @@ class DSpider(DSpiderCommon):
             next_page = grab.doc.select('//div[@class="b-paging"][1]/a[@class="b-paging__right" and text()="Следующая"]').attr('href', '')
 
             if next_page:
+                if 'ADD_TO_COMPARE' in next_page:
+                    next_page = DSpider.re_fix_pagination.sub(r'\1\4', next_page)
+                    self.log.info('Fix page', task)
+
                 next_page = UrlGenerator.get_page_params(self.domain, next_page, {})
                 yield self.do_task('parse_page', next_page, DSpider.get_next_task_priority(task, 0))
 
