@@ -105,7 +105,7 @@ class DSpider(DSpiderCommon):
             # E = price
             product_price = product_info.select('.//ins[@class="price-rouble"]').text('').replace(' ', '')
 
-            if product_price == 'по запросу':
+            if product_price == 'позапросу':
                 product_price = '-1'
 
             if not product_price or not Ree.float.match(product_price):
