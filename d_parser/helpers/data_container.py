@@ -16,6 +16,9 @@ class DataContainer:
     def data(self) -> []:
         return self._data
 
+    def append(self, anything):
+        self.log.fatal('\nvvv\n >>> Method .append is obsolete, use .add <<<\n ^^^\n')
+
     def _add(self, data_object: {}) -> None:
         self._data.append(data_object)
 
