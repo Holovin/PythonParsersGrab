@@ -151,6 +151,9 @@ class DSpider(DSpiderCommon):
 
                     product_description[key] = value
 
+            # id
+            product_id = task.url.rstrip('/').rsplit('/', 1)[1]
+
             # save
             self.result.add({
                 'name': product_name,
@@ -161,6 +164,7 @@ class DSpider(DSpiderCommon):
                 'sku': product_vendor_code,
                 'manufacture': product_vendor,
                 'photo': product_photo_url,
+                'id': product_id,
                 'properties': product_description
             })
 
