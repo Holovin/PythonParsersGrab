@@ -1,9 +1,10 @@
 from d_parser.d_spider_common import DSpiderCommon
 from d_parser.helpers.re_set import Ree
 from helpers.url_generator import UrlGenerator
+from d_parser.helpers.stat_counter import StatCounter as SC
 
 
-VERSION = 28
+VERSION = 29
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -27,14 +28,14 @@ class DSpider(DSpiderCommon):
 
             for link in items_list:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {})
-                yield self.do_task('parse_item', link, 100, last=True)
+                yield self.do_task('parse_item', link, DSpider.get_next_task_priority(task))
 
             # parse next page link
             next_page = catalog.select('.//a[@title="След."]').attr('href', '')
 
             if next_page:
                 next_page = UrlGenerator.get_page_params(self.domain, next_page, {})
-                yield self.do_task('initial', next_page, 90, last=False)
+                yield self.do_task('initial', next_page, DSpider.get_next_task_priority(task))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -47,14 +48,14 @@ class DSpider(DSpiderCommon):
         try:
             # skip bad 404 links, i don't know how it occurs
             if grab.doc.code == 404:
-                self.log.info(task, 'Start'.format(task.url))
+                self.log.info('Start'.format(task.url), task)
                 self.info.add(grab.doc.code)
 
-                self.log.info(task, 'Skip task, 404...')
+                self.log.info('Skip task, 404...', task)
                 return
 
             if self.check_body_errors(grab, task):
-                yield self.check_errors(task, last=True)
+                yield self.check_errors(task)
                 return
 
             # common block with info
@@ -81,17 +82,17 @@ class DSpider(DSpiderCommon):
                 product_status = '-1'
 
             else:
-                self.log.warning(task, f'Unknown count status {product_count_string} skip...')
+                self.log_warn(SC.MSG_UNKNOWN_COUNT, f'Unknown count status {product_count_string} skip...', task)
                 return
 
             # D = unit (measure)
             product_unit = product_info.select('.//span[@class="js_measurename"]').text('ед.')
 
             # E = price
-            product_price = product_info.select('.//span[@class="rs_prices-pdv js_price_pdv-1"]').text('').replace(' руб.', '')
+            product_price = product_info.select('.//span[@class="rs_prices-pdv js_price_pdv-1"]').text('').replace(' руб.', '').replace(' ', '')
 
             if not product_price or not Ree.float.match(product_price):
-                self.log.warning(task, f'Unknown price status {product_price}, skip...')
+                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price status {product_price}, skip...', task)
                 return
 
             # F = vendor code (sku)
@@ -127,8 +128,11 @@ class DSpider(DSpiderCommon):
                     for index, row_keys in enumerate(table_keys):
                         product_description[row_keys.text('')] = table_values[index].text('')
 
+            # ID
+            product_id = product_info.select('.//button[@data-product-id]').attr('data-product-id', '')
+
             # save
-            self.result.append({
+            self.result.add({
                 'name': product_name,
                 'quantity': product_count,
                 'delivery': product_status,
@@ -137,6 +141,7 @@ class DSpider(DSpiderCommon):
                 'sku': product_vendor_code,
                 'manufacture': product_vendor,
                 'photo': product_photo_url,
+                'id': product_id,
                 'properties': product_description
             })
 
@@ -144,4 +149,4 @@ class DSpider(DSpiderCommon):
             self.process_error(grab, task, e)
 
         finally:
-            self.process_finally(task, last=True)
+            self.process_finally(task)
