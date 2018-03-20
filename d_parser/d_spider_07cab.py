@@ -1,9 +1,10 @@
 from d_parser.d_spider_common import DSpiderCommon
 from d_parser.helpers.re_set import Ree
 from helpers.url_generator import UrlGenerator
+from d_parser.helpers.stat_counter import StatCounter as SC
 
 
-VERSION = 28
+VERSION = 29
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -24,14 +25,14 @@ class DSpider(DSpiderCommon):
 
             for link in items_list:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {})
-                yield self.do_task('parse_item', link, 100, last=True)
+                yield self.do_task('parse_item', link, DSpider.get_next_task_priority(task))
 
             # parse next page link
             next_page = grab.doc.select('//div[contains(@class, "pagination")][1]//a[@class="pg-next" and contains(@href, "p=")]').attr('href', '')
 
             if next_page:
                 next_page = UrlGenerator.get_page_params(self.domain, next_page, {})
-                yield self.do_task('initial', next_page, 90)
+                yield self.do_task('initial', next_page, DSpider.get_next_task_priority(task, 0))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -74,14 +75,14 @@ class DSpider(DSpiderCommon):
                 product_status = '-1'
 
             else:
-                self.log.warning(task, f'Unknown count status {product_count_string_stock} or {product_count_string_order}, skip...')
+                self.log_warn(SC.MSG_UNKNOWN_COUNT, f'Unknown count status {product_count_string_stock} or {product_count_string_order}, skip...', task)
                 return
 
             # E = price
             product_price_raw = product_info.select('.//p[@class="summ"]').text(default='')
 
             if not product_price_raw:
-                self.log.warning(task, f'Unknown price status {product_price_raw}, skip...')
+                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price status {product_price_raw}, skip...', task)
                 return
 
             if product_price_raw == 'по запросу':
@@ -92,7 +93,7 @@ class DSpider(DSpiderCommon):
                 product_price_raw = product_info.select('.//p[@class="summ"]/span[@id="commmon_price"]').text(default='')
 
                 if not product_price_raw or not Ree.float.match(product_price_raw):
-                    self.log.warning(task, f'Unknown price status {product_price_raw}, skip...')
+                    self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price status {product_price_raw}, skip...', task)
                     return
 
                 product_price = product_price_raw
@@ -135,8 +136,14 @@ class DSpider(DSpiderCommon):
             if description:
                 product_description['Технические характеристики'] = description
 
+            # ID
+            product_id = Ree.extract_int.match(product_info.select('.//a[@class="btn btn-success btn-large"]').attr('onclick', ''))
+
+            if product_id:
+                product_id = product_id.groupdict()['int']
+
             # save
-            self.result.append({
+            self.result.add({
                 'name': product_name,
                 'quantity': product_count,
                 'delivery': product_status,
@@ -145,6 +152,7 @@ class DSpider(DSpiderCommon):
                 'sku': product_vendor_code,
                 'manufacture': product_vendor,
                 'photo': product_photo_url,
+                'id': product_id,
                 'properties': product_description
             })
 
@@ -152,4 +160,4 @@ class DSpider(DSpiderCommon):
             self.process_error(grab, task, e)
 
         finally:
-            self.process_finally(task, last=True)
+            self.process_finally(task)
