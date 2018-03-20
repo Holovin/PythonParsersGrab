@@ -25,7 +25,7 @@ class DSpider(DSpiderCommon):
 
             for link in catalog:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {})
-                yield self.do_task('parse_page', link, 90)
+                yield self.do_task('parse_page', link, DSpider.get_next_task_priority(task))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -55,7 +55,7 @@ class DSpider(DSpiderCommon):
             if max_page > 1:
                 for page in range(2, max_page):
                     next_page = UrlGenerator.get_page_params(task.url, '', {'PAGEN_1': page})
-                    yield self.do_task('parse_page_items', next_page, 90)
+                    yield self.do_task('parse_page_items', next_page, DSpider.get_next_task_priority(task, 0))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -77,7 +77,7 @@ class DSpider(DSpiderCommon):
 
             for link in items_list:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {})
-                yield self.do_task('parse_item', link, 100)
+                yield self.do_task('parse_item', link, DSpider.get_next_task_priority(task))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -170,6 +170,12 @@ class DSpider(DSpiderCommon):
             if item_description:
                 product_description['Техническое описание'] = item_description
 
+            # ID
+            product_id = Ree.extract_int.match(product_info.select('.//a[@class="button orange itembtn butbasket"]').attr('id', ''))
+
+            if product_id:
+                product_id = product_id.groupdict()['int']
+
             # save
             self.result.add({
                 'name': product_name,
@@ -180,6 +186,7 @@ class DSpider(DSpiderCommon):
                 'sku': product_vendor_code,
                 'manufacture': product_vendor,
                 'photo': product_photo_url,
+                'id': product_id,
                 'properties': product_description
             })
 
