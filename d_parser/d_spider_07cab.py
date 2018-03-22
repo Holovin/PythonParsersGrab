@@ -141,6 +141,8 @@ class DSpider(DSpiderCommon):
 
             if product_id:
                 product_id = product_id.groupdict()['int']
+            else:
+                product_id = ''
 
             # save
             self.result.add({
