@@ -25,7 +25,7 @@ class DSpider(DSpiderCommon):
 
             for link in catalog:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {'limit': 900, 'view': 'price'})
-                yield self.do_task('parse_page', link, 90)
+                yield self.do_task('parse_page', link, DSpider.get_next_task_priority(task))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -44,7 +44,7 @@ class DSpider(DSpiderCommon):
 
             for link in items_list:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {})
-                yield self.do_task('parse_item', link, 100)
+                yield self.do_task('parse_item', link, DSpider.get_next_task_priority(task))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -113,6 +113,9 @@ class DSpider(DSpiderCommon):
                 if key and value:
                     product_description[key] = value
 
+            # ID
+            product_id = product_info.select('.//input[@name="ID"]').attr('value', '')
+
             # save
             self.result.add({
                 'name': product_name,
@@ -123,6 +126,7 @@ class DSpider(DSpiderCommon):
                 'sku': product_vendor_code,
                 'manufacture': product_vendor,
                 'photo': product_photo_url,
+                'id': product_id,
                 'properties': product_description
             })
 
