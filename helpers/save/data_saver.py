@@ -76,7 +76,7 @@ class DataSaver(ABC):
         pass
 
     def _get_save_dir(self, filename):
-        return os.path.join(self.output_dir, filename)
+        return os.path.join(os.getcwd(), self.output_dir, filename)
 
     def _check_data(self) -> bool:
         if not self.data:
