@@ -25,7 +25,7 @@ class DSpider(DSpiderCommon):
 
             for link in catalog:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {})
-                yield self.do_task('parse_page', link, 90)
+                yield self.do_task('parse_page', link, DSpider.get_next_task_priority(task))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -44,14 +44,14 @@ class DSpider(DSpiderCommon):
 
             for link in items_list:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {})
-                yield self.do_task('parse_item', link, 100)
+                yield self.do_task('parse_item', link, DSpider.get_next_task_priority(task))
 
             # parse next page link
             next_page = grab.doc.select('//div[@class="bx-pagination "]//li[@class="bx-pag-next"]/a').attr('href', '')
 
             if next_page:
                 next_page = UrlGenerator.get_page_params(self.domain, next_page, {})
-                yield self.do_task('parse_page', next_page, 90)
+                yield self.do_task('parse_page', next_page, DSpider.get_next_task_priority(task, 0))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -140,6 +140,9 @@ class DSpider(DSpiderCommon):
             # I = description (properties)
             product_description = {'Описание': product_info.select('.//div[@id="detail-text-content"]').text('')}
 
+            # ID
+            product_id = product_info.select('.//div[@class="detail_block"]').attr('id', '').rsplit('_', 1)[1]
+
             # save
             self.result.add({
                 'name': product_name,
@@ -150,6 +153,7 @@ class DSpider(DSpiderCommon):
                 'sku': product_vendor_code,
                 'manufacture': product_vendor,
                 'photo': product_photo_url,
+                'id': product_id,
                 'properties': product_description
             })
 
