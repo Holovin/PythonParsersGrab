@@ -3,9 +3,10 @@ import re
 from d_parser.d_spider_common import DSpiderCommon
 from d_parser.helpers.re_set import Ree
 from helpers.url_generator import UrlGenerator
+from d_parser.helpers.stat_counter import StatCounter as SC
 
 
-VERSION = 28
+VERSION = 29
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -28,7 +29,7 @@ class DSpider(DSpiderCommon):
 
             for link in categories_list:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {'SET_PAGE_COUNT': '99999'})
-                yield self.do_task('parse_page', link, 90)
+                yield self.do_task('parse_page', link, DSpider.get_next_task_priority(task))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -48,7 +49,7 @@ class DSpider(DSpiderCommon):
 
             for link in items_list:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {})
-                yield self.do_task('parse_item', link, 100, last=True)
+                yield self.do_task('parse_item', link, DSpider.get_next_task_priority(task))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -89,7 +90,7 @@ class DSpider(DSpiderCommon):
                 product_count_raw = Ree.extract_int.match(product_count_string)
 
                 if not product_count_raw:
-                    self.log.warning(task, f'Wrong delivery date {product_count_string}, skip...')
+                    self.log_warn(SC.MSG_UNKNOWN_COUNT, f'Wrong delivery date {product_count_string}, skip...', task)
                     return
 
                 product_count_raw = product_count_raw.groupdict()['int']
@@ -100,11 +101,11 @@ class DSpider(DSpiderCommon):
                     product_status = product_count_raw
 
                 else:
-                    self.log.info(task, f'Skip delivery date {product_count_string}, skip...')
+                    self.log_warn(SC.MSG_UNKNOWN_COUNT, f'Skip delivery date {product_count_string}, skip...', task)
                     return
 
             else:
-                self.log.warning(task, f'Unknown count status {product_count_string}, skip...')
+                self.log_warn(SC.MSG_UNKNOWN_COUNT, f'Unknown count status {product_count_string}, skip...', task)
                 return
 
             # D = unit (measure) [const if no stock, else parse]
@@ -120,11 +121,11 @@ class DSpider(DSpiderCommon):
             product_price_raw = product_info.select('.//div[@class="popup-in"]//span[@class="price1 bold"]').attr('content', '')
 
             if not product_price_raw:
-                self.log.warning(task, f'Unknown price #1 status {product_price_raw}, skip...')
+                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price #1 status {product_price_raw}, skip...', task)
                 return
 
             if not Ree.float.match(product_price_raw):
-                self.log.warning(task, f'Unknown price #2 status {product_price_raw}, skip...')
+                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price #2 status {product_price_raw}, skip...', task)
                 return
 
             product_price = product_price_raw
@@ -154,8 +155,11 @@ class DSpider(DSpiderCommon):
                 for index, row_keys in enumerate(table_keys):
                     product_description[row_keys.text('')] = table_values[index].text('')
 
+            # ID
+            product_id = product_info.select('.//input[@class="submit2 add_to_cart"]').attr('element_id', '')
+
             # save
-            self.result.append({
+            self.result.add({
                 'name': product_name,
                 'quantity': product_count,
                 'delivery': product_status,
@@ -164,6 +168,7 @@ class DSpider(DSpiderCommon):
                 'sku': product_vendor_code,
                 'manufacture': product_vendor,
                 'photo': product_photo_url,
+                'id': product_id,
                 'properties': product_description
             })
 
@@ -171,4 +176,4 @@ class DSpider(DSpiderCommon):
             self.process_error(grab, task, e)
 
         finally:
-            self.process_finally(task, last=True)
+            self.process_finally(task)
