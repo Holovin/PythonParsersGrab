@@ -1,50 +1,32 @@
-from grab.spider import Spider, Task
 from lxml import html
 
-from d_parser.helpers.cookies_init import cookies_init
-from d_parser.helpers.parser_extender import check_body_errors, process_error, common_init, check_errors, extend_class, process_finally
+from d_parser.d_spider_common import DSpiderCommon
 from d_parser.helpers.re_set import Ree
-from helpers.config import Config
 from helpers.url_generator import UrlGenerator
+from d_parser.helpers.stat_counter import StatCounter as SC
 
 
-VERSION = 27
+VERSION = 29
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
 # Warn: noinspection PyUnusedLocal
-class DSpider(Spider):
-    initial_urls = Config.get_seq('SITE_URL')
-
+class DSpider(DSpiderCommon):
     def __init__(self, thread_number, try_limit=0):
-        super().__init__(thread_number=thread_number, network_try_limit=try_limit, priority_mode='const')
-
-        extend_class(DSpider, [
-            check_body_errors,
-            check_errors,
-            process_error,
-            process_finally,
-            common_init
-        ])
-
-        self.common_init(try_limit)
-
-    def create_grab_instance(self, **kwargs):
-        grab = super(DSpider, self).create_grab_instance(**kwargs)
-        return cookies_init(self.cookie_jar, grab)
+        super().__init__(thread_number, try_limit)
 
     # parse categories
     def task_initial(self, grab, task):
         try:
             if self.check_body_errors(grab, task):
-                self.log.fatal(task, f'Err task, attempt {task.task_try_count}')
+                yield self.check_errors(task)
                 return
 
             links = grab.doc.select('//div[@id="main-subitems"]//a')
 
             for link in links:
                 url = UrlGenerator.get_page_params(self.domain, link.attr('href'), {'onpage': 99999})
-                yield Task('parse_page', url=url, priority=90, raw=True)
+                yield self.do_task('parse_page', url, DSpider.get_next_task_priority(task))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -65,7 +47,7 @@ class DSpider(Spider):
                 link = row.attr('href')
                 link = UrlGenerator.get_page_params(self.domain, link, {})
 
-                yield Task('parse_item', url=link, priority=100, raw=True)
+                yield self.do_task('parse_item', link, DSpider.get_next_task_priority(task))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -110,7 +92,7 @@ class DSpider(Spider):
                 # E = price (float)
                 # check if correct price
                 if not Ree.float.match(product_price):
-                    self.log.warning(task, f'Skip item, cuz wrong price {product_price}')
+                    self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Skip item, cuz wrong price {product_price}', task)
                     return
 
             # F = vendor code
@@ -148,8 +130,11 @@ class DSpider(Spider):
                 if key:
                     product_description[key] = value
 
+            # ID
+            product_id = product_info.select('.//div[@class="product-add-but"]').attr('data-id', '')
+
             # save
-            row = {
+            self.result.add({
                 'name': product_name,
                 'quantity': product_count,
                 'delivery': product_status,
@@ -158,11 +143,9 @@ class DSpider(Spider):
                 'sku': product_vendor_code,
                 'manufacture': product_vendor,
                 'photo': product_photo_url,
+                'id': product_id,
                 'properties': product_description
-            }
-
-            self.log.info(task, row)
-            self.result.append(row)
+            })
 
         except Exception as e:
             self.process_error(grab, task, e)

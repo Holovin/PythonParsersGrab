@@ -96,7 +96,7 @@ class DSpider(DSpiderCommon):
 
                 # check if correct price
                 if not Ree.float.match(product_price):
-                    self.log_warn(SC.MSG_WRONG_PRICE, f'Skip item, cuz wrong price {product_price}', task)
+                    self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Skip item, cuz wrong price {product_price}', task)
                     return
 
                 # C = status
@@ -116,7 +116,7 @@ class DSpider(DSpiderCommon):
                             product_status = product_status_raw
 
                             if int(product_status) > 20:
-                                self.log_warn(SC.MSG_WRONG_PRICE, f'Skip because {product_status} is more 20', task)
+                                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Skip because {product_status} is more 20', task)
                                 return
 
                         else:
