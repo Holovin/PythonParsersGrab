@@ -3,9 +3,10 @@ import re
 from d_parser.d_spider_common import DSpiderCommon
 from d_parser.helpers.re_set import Ree
 from helpers.url_generator import UrlGenerator
+from d_parser.helpers.stat_counter import StatCounter as SC
 
 
-VERSION = 28
+VERSION = 29
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -20,14 +21,14 @@ class DSpider(DSpiderCommon):
     def task_initial(self, grab, task):
         try:
             if self.check_body_errors(grab, task):
-                self.log.fatal(task, 'Err task, attempt {}'.format(task.task_try_count))
+                yield self.check_errors(task)
                 return
 
             # make link
             url = UrlGenerator.get_page_params(self.domain, 'catalog', {'curPos': 0})
 
             # prepare page loop parsing
-            yield self.do_task('parse_page', url, 90)
+            yield self.do_task('parse_page', url, DSpider.get_next_task_priority(task))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -55,7 +56,7 @@ class DSpider(DSpiderCommon):
                 if link[:1] == '/':
                     link = UrlGenerator.get_page_params(self.domain, link, {})
 
-                yield self.do_task('parse_item', link, 100, last=True)
+                yield self.do_task('parse_item', link, DSpider.get_next_task_priority(task))
 
             # parse "показать ещё" links
             more_links = grab.doc.select('.//a[starts-with(@href, "/catalog/?")]')
@@ -68,7 +69,7 @@ class DSpider(DSpiderCommon):
                 if link[:1] == '/':
                     link = UrlGenerator.get_page_params(self.domain, link, {})
 
-                yield self.do_task('parse_page', link, 90)
+                yield self.do_task('parse_page', link, DSpider.get_next_task_priority(task, 0))
 
         except Exception as e:
             self.process_error(grab, task, e)
@@ -111,7 +112,7 @@ class DSpider(DSpiderCommon):
 
             # check if correct price
             if not Ree.float.match(product_price):
-                self.log.info(task, 'Skip item, cuz wrong price {}'.format(product_price))
+                self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Skip item, cuz wrong price {product_price}', task)
                 return
 
             # F = vendor code (sku)                                                                         what's wrong with python xpath?
@@ -127,8 +128,11 @@ class DSpider(DSpiderCommon):
             # I = description (properties) [const empty]
             product_description = ' '
 
+            # ID
+            product_id = Ree.extract_int.match(task.url).groupdict()['int']
+
             # save
-            self.result.append({
+            self.result.add({
                 'name': product_name,
                 'quantity': product_count,
                 'delivery': product_status,
@@ -137,11 +141,12 @@ class DSpider(DSpiderCommon):
                 'sku': product_vendor_code,
                 'manufacture': product_vendor,
                 'photo': product_photo_url,
-                'properties': product_description
+                'id': product_id,
+                'properties': product_description,
             })
 
         except Exception as e:
             self.process_error(grab, task, e)
 
         finally:
-            self.process_finally(task, last=True)
+            self.process_finally(task)
