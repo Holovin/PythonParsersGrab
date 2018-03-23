@@ -77,7 +77,7 @@ class DataSaver(ABC):
 
     # TODO: rework?
     def _get_save_dir(self, filename):
-        return os.path.join(get_script_directory(), '../..', self.output_dir, filename)
+        return os.path.abspath(os.path.join(get_script_directory(), '../..', self.output_dir, filename))
 
     def _check_data(self) -> bool:
         if not self.data:
