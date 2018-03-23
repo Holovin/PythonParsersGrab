@@ -69,18 +69,18 @@ def main():
         print('Empty config?')
         exit(2)
 
+    # output dirs init
+    saver = init_saver_class({
+        'output_dir': Config.get('APP_OUTPUT_DIR')
+    })
+
     # create dirs if not exist
-    DataSaver.fix_dirs(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'))
+    DataSaver.fix_dirs(saver.get_save_dir(), Config.get('APP_LOG_DIR'))
 
     # log
     logger = init_loggers()
     logger.info(' --- ')
     logger.info('Start app...')
-
-    # output dirs init
-    saver = init_saver_class({
-        'output_dir': Config.get('APP_OUTPUT_DIR')
-    })
 
     # output category for detect save mode
     # need for use after parse, but read before for prevent useless parse (if will errors)
