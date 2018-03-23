@@ -19,13 +19,13 @@ from helpers.save.data_saver_json import DataSaverJSON
 CURRENT_VERSION = 29
 
 
-def init_loggers():
+def init_loggers(path: str) -> None:
     logger_setup(
-        os.path.join(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'), Config.get('APP_LOG_DEBUG_FILE')),
+        os.path.join(path, Config.get('APP_LOG_DIR'), Config.get('APP_LOG_DEBUG_FILE')),
         ['ddd_site_parse'], True)
 
     logger_setup(
-        os.path.join(Config.get('APP_OUTPUT_DIR'), Config.get('APP_LOG_DIR'), Config.get('APP_LOG_GRAB_FILE')), [
+        os.path.join(path, Config.get('APP_LOG_DIR'), Config.get('APP_LOG_GRAB_FILE')), [
             'grab.document',
             'grab.spider.base',
             'grab.spider.task',
@@ -78,7 +78,7 @@ def main():
     DataSaver.fix_dirs(saver.get_save_dir(), Config.get('APP_LOG_DIR'))
 
     # log
-    logger = init_loggers()
+    logger = init_loggers(saver.get_save_dir())
     logger.info(' --- ')
     logger.info('Start app...')
 
