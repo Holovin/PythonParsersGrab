@@ -7,6 +7,7 @@ import time
 import os
 
 from abc import ABC, abstractmethod
+from helpers.save.get_script_directory import get_script_directory
 
 logger = logging.getLogger('ddd_site_parse')
 
@@ -74,8 +75,9 @@ class DataSaver(ABC):
     def _save(self, data: [], data_fields: [], out_file: str, params: {}) -> None:
         pass
 
+    # TODO: rework?
     def _get_save_dir(self, filename):
-        return os.path.join(self.output_dir, filename)
+        return os.path.join(get_script_directory(), '../..', self.output_dir, filename)
 
     def _check_data(self) -> bool:
         if not self.data:

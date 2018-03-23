@@ -15,7 +15,6 @@ from helpers.module_loader import ModuleLoader
 from helpers.save.data_saver import DataSaver
 from helpers.save.data_saver_csv import DataSaverCSV
 from helpers.save.data_saver_json import DataSaverJSON
-from helpers.save.get_script_directory import get_script_directory
 
 CURRENT_VERSION = 29
 
@@ -80,7 +79,7 @@ def main():
 
     # output dirs init
     saver = init_saver_class({
-        'output_dir': os.path.join(get_script_directory(), Config.get('APP_OUTPUT_DIR'))
+        'output_dir': Config.get('APP_OUTPUT_DIR')
     })
 
     # output category for detect save mode
