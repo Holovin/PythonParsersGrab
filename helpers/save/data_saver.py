@@ -39,7 +39,7 @@ class DataSaver(ABC):
         filename = f'{name}{additional}.{self.ext}'
         filename_counter = 1
 
-        while os.path.isfile(os.path.join(self._get_save_dir(filename))):
+        while os.path.isfile(os.path.join(self.get_save_dir(filename))):
             filename = f'{name}{additional}_({filename_counter}).{self.ext}'
             filename_counter += 1
 
@@ -47,7 +47,14 @@ class DataSaver(ABC):
 
     def save(self, data_fields: [], params: {}) -> None:
         if self._check_data():
-            self._save(self.data, data_fields, self.get_file_name(''), {})
+            output_file_name = self.get_file_name('')
+            output_full_path = self.get_save_dir(output_file_name)
+            output_dir = os.path.dirname(output_full_path)
+
+            if not os.path.exists(output_dir):
+                DataSaver.fix_dirs(output_dir)
+
+            self._save(self.data, data_fields, output_full_path, {})
 
     def save_by_category(self, data_fields: [], category_field: str, params: {}) -> None:
         if self._check_data():
@@ -63,20 +70,21 @@ class DataSaver(ABC):
 
             # save data
             for cat in result.keys():
-                filename = self.get_file_name('', cat)
-                filename_dir = self._get_save_dir(os.path.dirname(filename))
+                output_file_name = self.get_file_name('', cat)
+                output_full_path = self.get_save_dir(output_file_name)
+                output_dir = os.path.dirname(output_full_path)
 
-                if not os.path.exists(filename_dir):
-                    DataSaver.fix_dirs(filename_dir)
+                if not os.path.exists(output_dir):
+                    DataSaver.fix_dirs(output_dir)
 
-                self._save(result[cat], data_fields, self.get_file_name('', cat), {})
+                self._save(result[cat], data_fields, output_full_path, {})
 
     @abstractmethod
     def _save(self, data: [], data_fields: [], out_file: str, params: {}) -> None:
         pass
 
     # TODO: rework?
-    def _get_save_dir(self, filename):
+    def get_save_dir(self, filename=''):
         return os.path.abspath(os.path.join(get_script_directory(), '../..', self.output_dir, filename))
 
     def _check_data(self) -> bool:

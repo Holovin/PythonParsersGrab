@@ -16,9 +16,7 @@ class DataSaverCSV(DataSaver):
         self.newline = params.get('newline', '')
         self.csv_delimiter = params.get('csv_delimiter', ';')
 
-    def _save(self, data: [], data_fields: [], out_file: str, params: {}) -> None:
-        output_path = self._get_save_dir(out_file)
-
+    def _save(self, data: [], data_fields: [], output_path: str, params: {}) -> None:
         with open(output_path, 'w', newline=self.newline, encoding=self.encoding) as output:
             writer = csv.writer(output, delimiter=self.csv_delimiter)
             self._check_data_fields(data, data_fields)
