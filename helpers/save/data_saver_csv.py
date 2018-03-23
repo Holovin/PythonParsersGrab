@@ -2,7 +2,6 @@
 
 import csv
 import logging
-import os
 
 from helpers.save.data_saver import DataSaver
 
@@ -18,7 +17,7 @@ class DataSaverCSV(DataSaver):
         self.csv_delimiter = params.get('csv_delimiter', ';')
 
     def _save(self, data: [], data_fields: [], out_file: str, params: {}) -> None:
-        output_path = os.path.join(self.output_dir, out_file)
+        output_path = self._get_save_dir(out_file)
 
         with open(output_path, 'w', newline=self.newline, encoding=self.encoding) as output:
             writer = csv.writer(output, delimiter=self.csv_delimiter)
