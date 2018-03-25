@@ -5,10 +5,11 @@ bash python.sh -b
 rm python.sh
 
 export PATH=~/miniconda3/bin:$PATH
+conda config --add channels conda-forge
 conda create --name 'd_parsers' python=3.6 -y
-source activate d_parsers -y
+source activate d_parsers
 
 pip install grab python-dotenv -q
-conda install pycurl
+conda install pycurl -y
 
 source deactivate
