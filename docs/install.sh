@@ -6,7 +6,7 @@ rm python.sh
 
 export PATH=~/miniconda3/bin:$PATH
 conda create --name 'd_parsers' python=3.6 -y
-source activate d_parsers
+source activate d_parsers -y
 
 pip install grab python-dotenv -q
 conda install pycurl
