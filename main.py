@@ -19,7 +19,7 @@ from helpers.save.data_saver_json import DataSaverJSON
 CURRENT_VERSION = 29
 
 
-def init_loggers(path: str) -> None:
+def init_loggers(path: str) -> logging.Logger:
     logger_setup(
         os.path.join(path, Config.get('APP_LOG_DIR'), Config.get('APP_LOG_DEBUG_FILE')),
         ['ddd_site_parse'], True)
