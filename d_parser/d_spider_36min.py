@@ -22,7 +22,7 @@ class DSpider(DSpiderCommon):
                 yield self.check_errors(task)
                 return
 
-            items_list = grab.doc.select('//div[contains(@class, "left-menu")]//li/a')
+            items_list = grab.doc.select('//div[contains(@class, "left-menu")]/ul[@data-depth-level=0]/li/a')
 
             for link in items_list:
                 link = UrlGenerator.get_page_params(self.domain, link.attr('href'), {'COUNT': '100'})
@@ -49,7 +49,7 @@ class DSpider(DSpiderCommon):
                 yield self.do_task('parse_item', link, DSpider.get_next_task_priority(task))
 
             # parse next page link
-            next_page = grab.doc.select('(//div[contains(@class, " catalog-list ")]//a[@class="modern-page-next next-page"])[1]').attr('href', '')
+            next_page = grab.doc.select('(//div[contains(@class, "	catalog-list	")]//a[@class="modern-page-next next-page"])[1]').attr('href', '')
 
             if next_page:
                 next_page = UrlGenerator.get_page_params(self.domain, next_page, {})
@@ -105,11 +105,13 @@ class DSpider(DSpiderCommon):
             # E = price
             product_price = product_info\
                 .select('.//div[@class="price-block__pricePerCard"]/span[@class="price-style"]')\
-                .text()\
+                .text('')\
                 .replace(' руб.', '')\
                 .replace(',', '.')
 
-            # if product_price == 'На заказ':
+            if not product_price:
+                return
+
             if not product_price or not Ree.float.match(product_price):
                 self.log_warn(SC.MSG_UNKNOWN_PRICE, f'Unknown price status {product_price}, skip...', task)
                 return
@@ -181,7 +183,7 @@ class DSpider(DSpiderCommon):
             store_count_int = Ree.extract_int.match(store_count)
 
             if not store_count_int:
-                self.log_warn(SC.MSG_UNKNOWN_COUNT, f'Wrong count value {store_count}, skip...', task)
+                self.log_warn(SC.MSG_UNKNOWN_COUNT, f'Wrong count value "{store_count}", skip...', task)
                 continue
 
             store_count = store_count_int.groupdict()['int']
