@@ -23,7 +23,7 @@ class StatCounter:
         self.messages = defaultdict(set)
 
     # add
-    def add(self, code: int) -> None:
+    def add(self, code: int or str) -> None:
         self.requests[str(code)] += 1
 
     def exc(self, exception_type: str) -> None:
