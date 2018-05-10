@@ -64,8 +64,9 @@ class StatCounter:
 
             output += 'Codes:\n'
 
-            for row in requests_sorted:
-                output += f'\t[{row[0]}] Times: {row[1]/requests_total * 100}% ({row[1]} / {requests_total})\n'
+            if requests_total > 0:
+                for row in requests_sorted:
+                    output += f'\t[{row[0]}] Times: {row[1]/requests_total * 100}% ({row[1]} / {requests_total})\n'
 
         # exceptions
         if len(self.exceptions) > 0:
