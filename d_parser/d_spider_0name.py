@@ -2,7 +2,7 @@ from d_parser.d_spider_common import DSpiderCommon
 from helpers.config import Config
 
 
-VERSION = 28
+VERSION = 29
 
 
 # Warn: Don't remove task argument even if not use it (it's break grab and spider crashed)
@@ -26,8 +26,8 @@ class DSpider(DSpiderCommon):
 
             # save
             if name:
-                self.log.info(task, f'Add site: {name}')
-                self.result.append({'name': name})
+                self.log.info(f'Add site: {name}', task)
+                self.result.add({'name': name})
 
         except Exception as e:
             self.process_error(grab, task, e)
