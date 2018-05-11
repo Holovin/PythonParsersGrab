@@ -1,12 +1,23 @@
 # DParsers-Grab-Core (v2.9)
 Common core for site parsing with python grab framework.
 
-## Installation (for clean Ubuntu Server 16.04)
-1. Run `sudo bash docs/pre_install_need_sudo.sh`
-1. Run `bash docs/install.sh`
+## Install Python (pre-install)
+1. Install Python 3.6 (or newer)
+```
+wget -O python.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash python.sh -b
+rm python.sh
+export PATH=~/miniconda3/bin:$PATH
+```
+2. Install [pipenv](https://github.com/pypa/pipenv) (`pip install pipenv`)
+
+## Project install
+1. Clone project
+2. In project directory `pipenv install`
+3. \[Optional for Windows\] Download and install [curl](https://chocolatey.org/packages/curl/)
 
 ## Running
-1. Run `source activate d_parsers` 
+1. Run `pipenv shell` 
 1. Run `python main.py {SITE_CONFIG_FILE_NAME}`
 
 ## Base config .env description
