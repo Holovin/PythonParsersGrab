@@ -8,6 +8,7 @@ grab = "==0.6.38"
 python-dotenv = "*"
 lxml = "*"
 pycurl = "*"
+pymongo = "*"
 
 [dev-packages]
 
