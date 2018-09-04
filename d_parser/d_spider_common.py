@@ -101,6 +101,9 @@ class DSpiderCommon(Spider):
 
     # Task helpers
     def do_task(self, name: str, url: str, priority: int, task_try_count: int = 0, last: bool = False, raw: bool = True, skip_repeating: bool = True, warn_repeating: bool = True):
+        link = parse.urlparse(url)
+
+        # check dup
         url_limit_warn_flag = self.links.add(url)
 
         if url_limit_warn_flag and warn_repeating:
@@ -109,6 +112,7 @@ class DSpiderCommon(Spider):
         if url_limit_warn_flag and skip_repeating:
             return
 
+        # single
         if self.single_task_mode:
             if self.tasks_store.get(name, ''):
                 return
@@ -116,7 +120,6 @@ class DSpiderCommon(Spider):
                 self.tasks_store[name] = 'done'
 
         # check url schema
-        link = parse.urlparse(url)
         if link.scheme not in ['http', 'https']:
             self.log_warn(StatCounter.MSG_WRONG_SCHEME, f'Uri: {url}')
             return
@@ -125,6 +128,7 @@ class DSpiderCommon(Spider):
             self.log.debug(f'Skip task, cause uri [{link.hostname}] not match with domain [{self.domain_hostname}]')
             return
 
+        # stats
         if last or DSpiderCommon.check_task_name_is_last(name):
             self.info.add_task()
         else:

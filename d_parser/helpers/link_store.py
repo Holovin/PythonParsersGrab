@@ -1,3 +1,5 @@
+from urllib import parse
+
 from d_parser.helpers.logger_overrider import Log
 
 
@@ -14,7 +16,10 @@ class LinkStore:
     def get(self, url: str) -> int:
         return self._links.get(url, 0)
 
-    def add(self, url: str) -> bool:
+    def add(self, url: str, remove_fragment: bool = True) -> bool:
+        if remove_fragment:
+            url = parse.urldefrag(url).url
+
         count = self._links.get(url, 0)
         self._log.debug(f'Add link: {url} [count: {count}]')
 
