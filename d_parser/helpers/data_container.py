@@ -23,5 +23,5 @@ class DataContainer:
         self._data.append(data_object)
 
     def _add_log(self, data_object: {}) -> None:
-        self._data.append(data_object)
-        self.log.info('Add item: {}'.format(data_object))
+        self._add(data_object)
+        self.log.debug('Add item: {}'.format(data_object))

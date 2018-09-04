@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-grab = "==0.6.38"
+grab = ">=0.6.40"
 python-dotenv = "*"
 lxml = "*"
 pycurl = "*"

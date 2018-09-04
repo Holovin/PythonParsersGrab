@@ -1,10 +1,12 @@
 import logging
 import traceback
 
+from urllib import parse
 from grab import Grab
 from grab.spider import Spider, Task
 
 from d_parser.helpers.data_container import DataContainer
+from d_parser.helpers.link_store import LinkStore
 from d_parser.helpers.logger_overrider import Log
 from d_parser.helpers.re_set import Ree
 from d_parser.helpers.stat_counter import StatCounter
@@ -41,8 +43,12 @@ class DSpiderCommon(Spider):
         self.info = StatCounter()
         self.info.add_task(StatCounter.TASK_FACTORY)
 
+        # Links
+        self.links = LinkStore(self.log)
+
         # Common vars
         self.domain = UrlGenerator.get_host_from_url(Config.get_seq('SITE_URL')[0])
+        self.domain_hostname = parse.urlparse(self.domain).hostname
         self.err_limit = try_limit
 
         # Cache
@@ -94,18 +100,37 @@ class DSpiderCommon(Spider):
             self.process_finally(task)
 
     # Task helpers
-    def do_task(self, name: str, url: str, priority: int, task_try_count: int = 0, last: bool = False, raw: bool = True):
+    def do_task(self, name: str, url: str, priority: int, task_try_count: int = 0, last: bool = False, raw: bool = True, skip_repeating: bool = True, warn_repeating: bool = True):
+        url_limit_warn_flag = self.links.add(url)
+
+        if url_limit_warn_flag and warn_repeating:
+            self.log_warn(StatCounter.MSG_DUPLICATE_URL, f'URL Limit exceed, count: {self.links.get(url)}')
+
+        if url_limit_warn_flag and skip_repeating:
+            return
+
         if self.single_task_mode:
             if self.tasks_store.get(name, ''):
                 return
             else:
                 self.tasks_store[name] = 'done'
 
+        # check url schema
+        link = parse.urlparse(url)
+        if link.scheme not in ['http', 'https']:
+            self.log_warn(StatCounter.MSG_WRONG_SCHEME, f'Uri: {url}')
+            return
+
+        if link.hostname != self.domain_hostname:
+            self.log.debug(f'Skip task, cause uri [{link.hostname}] not match with domain [{self.domain_hostname}]')
+            return
+
         if last or DSpiderCommon.check_task_name_is_last(name):
             self.info.add_task()
         else:
             self.info.add_task(StatCounter.TASK_FACTORY)
 
+        # TODO if task is NOT last then set cache not last
         return Task(name, url=url, priority=priority, task_try_count=task_try_count, raw=raw)
 
     def get_body(self, grab: Grab):
@@ -122,10 +147,10 @@ class DSpiderCommon(Spider):
 
         return False
 
-    def check_errors(self, task: Task, last: bool = False) -> None:
+    def check_errors(self, task: Task, last: bool = False, skip_repeating: bool = True, warn_repeating: bool = False) -> None:
         if task.task_try_count < self.err_limit:
             self.log.error(f'Restart task, attempt {task.task_try_count}', task)
-            return self.do_task(task.name, task.url, task.priority + 5, task.task_try_count + 1, last)
+            return self.do_task(task.name, task.url, task.priority + 5, task.task_try_count + 1, last, skip_repeating=skip_repeating, warn_repeating=warn_repeating)
 
         err = f'Skip task, attempt {task.task_try_count}'
         self.log.error(err, task)

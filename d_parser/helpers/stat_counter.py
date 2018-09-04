@@ -11,6 +11,8 @@ class StatCounter:
     MSG_UNKNOWN_STORE = 'Unknown store'
     MSG_UNKNOWN_SKU = 'Unknown sku vendor code'
     MSG_POSSIBLE_WARN = 'Possible warning?'
+    MSG_DUPLICATE_URL = 'URL duplicate!'
+    MSG_WRONG_SCHEME = 'Wrong url chema'
 
     TASK_TOTAL = 'tasks_total'
     TASK_TOTAL_NO_DROP = 'task_total_no_drop'
