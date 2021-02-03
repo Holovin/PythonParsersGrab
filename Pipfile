@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-grab = ">=0.6.40"
+grab = {editable = true, ref = "master", git = "https://github.com/lorien/grab.git"}
 python-dotenv = "*"
 lxml = "*"
 pycurl = "*"
@@ -13,4 +13,4 @@ pymongo = "*"
 [dev-packages]
 
 [requires]
-python_version = "3.6"
+python_version = "3.9"

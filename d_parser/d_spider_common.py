@@ -1,4 +1,5 @@
 import logging
+import os
 import traceback
 
 from urllib import parse
@@ -43,8 +44,21 @@ class DSpiderCommon(Spider):
         self.info = StatCounter()
         self.info.add_task(StatCounter.TASK_FACTORY)
 
-        # Links
-        self.links = LinkStore(self.log)
+        # Links: todo
+        self.links_todo = []
+
+        file_links_todo = Config.get('INPUT_URLS_FILENAME', '')
+
+        if file_links_todo:
+            path = os.path.join(os.path.join(os.path.dirname(__file__), '../config', file_links_todo))
+
+            with open(path) as f:
+                self.links_todo = f.read().splitlines()
+
+            self.logger.info(f'Loaded {len(self.links_todo)} links...')
+
+        # Links: done
+        self.links_parsed = LinkStore(self.log, '[DONE]')
 
         # Common vars
         self.domain = UrlGenerator.get_host_from_url(Config.get_seq('SITE_URL')[0])
@@ -104,10 +118,10 @@ class DSpiderCommon(Spider):
         link = parse.urlparse(url)
 
         # check dup
-        url_limit_warn_flag = self.links.add(url)
+        url_limit_warn_flag = self.links_parsed.add(url)
 
         if url_limit_warn_flag and warn_repeating:
-            self.log_warn(StatCounter.MSG_DUPLICATE_URL, f'URL Limit exceed, count: {self.links.get(url)}')
+            self.log_warn(StatCounter.MSG_DUPLICATE_URL, f'URL Limit exceed, count: {self.links_parsed.get(url)}')
 
         if url_limit_warn_flag and skip_repeating:
             return

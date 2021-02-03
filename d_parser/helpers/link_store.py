@@ -4,10 +4,11 @@ from d_parser.helpers.logger_overrider import Log
 
 
 class LinkStore:
-    def __init__(self, log: Log, warn_limit_after: int = 1):
+    def __init__(self, log: Log, name: str, warn_limit_after: int = 1):
         self._links = {}
         self._log = log
         self._limit = warn_limit_after
+        self._name = name
 
     @property
     def data(self) -> []:
@@ -21,7 +22,7 @@ class LinkStore:
             url = parse.urldefrag(url).url
 
         count = self._links.get(url, 0)
-        self._log.debug(f'Add link: {url} [count: {count}]')
+        self._log.debug(f'{self._name} add link: {url} [count: {count}]')
 
         self._links[url] = count + 1
 

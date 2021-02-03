@@ -104,3 +104,4 @@ ENV/
 .idea/
 out/
 config/
+.DS_Store

@@ -1,6 +1,6 @@
 # main.py
 # Parser runner, based on grab framework
-# r29
+# r291
 
 import logging
 import os
@@ -16,7 +16,7 @@ from helpers.save.data_saver import DataSaver
 from helpers.save.data_saver_csv import DataSaverCSV
 from helpers.save.data_saver_json import DataSaverJSON
 
-CURRENT_VERSION = 29
+CURRENT_VERSION = 291
 
 
 def init_loggers(path: str) -> logging.Logger:

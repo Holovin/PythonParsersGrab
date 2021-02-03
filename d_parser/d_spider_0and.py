@@ -55,7 +55,7 @@ class DSpider(DSpiderCommon):
             self.process_finally(task)
 
     def d_post_work(self):
-        for row in sorted(self.links.data.items(), key=lambda kv: kv[1], reverse=True):
+        for row in sorted(self.links_parsed.data.items(), key=lambda kv: kv[1], reverse=True):
             self.result.add({
                 'uri': row[0],
                 'rate': row[1]
